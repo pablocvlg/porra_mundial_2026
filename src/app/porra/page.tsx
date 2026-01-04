@@ -49,81 +49,137 @@ export default function PorraPage() {
       });
   }, []);
 
-  const calculateGroupStandings = (groupMatches: Match[]): TeamStats[] => {
-    const statsMap: Record<string, TeamStats> = {};
+  // Calcular todas las clasificaciones de grupos y resolver brackets en un solo useMemo
+  const groupedMatches = useMemo(() => {
+    const groups: Record<string, Match[]> = {};
+    const groupStandings: Record<string, TeamStats[]> = {};
+    const knockout: Match[] = [];
 
-    groupMatches.forEach(match => {
-      const pred = predictions[match.id];
-      if (!pred) return;
+    // Función interna para calcular standings
+    const calculateGroupStandings = (groupMatches: Match[]): TeamStats[] => {
+      const statsMap: Record<string, TeamStats> = {};
 
-      [match.homeTeam, match.awayTeam].forEach(team => {
-        if (!statsMap[team]) {
-          statsMap[team] = {
-            team,
-            played: 0,
-            won: 0,
-            drawn: 0,
-            lost: 0,
-            goalsFor: 0,
-            goalsAgainst: 0,
-            goalDifference: 0,
-            points: 0,
-          };
+      groupMatches.forEach(match => {
+        const pred = predictions[match.id];
+        if (!pred) return;
+
+        [match.homeTeam, match.awayTeam].forEach(team => {
+          if (!statsMap[team]) {
+            statsMap[team] = {
+              team,
+              played: 0,
+              won: 0,
+              drawn: 0,
+              lost: 0,
+              goalsFor: 0,
+              goalsAgainst: 0,
+              goalDifference: 0,
+              points: 0,
+            };
+          }
+        });
+
+        const homeGoals = typeof pred.homeGoals === "number" ? pred.homeGoals : 0;
+        const awayGoals = typeof pred.awayGoals === "number" ? pred.awayGoals : 0;
+
+        statsMap[match.homeTeam].played++;
+        statsMap[match.awayTeam].played++;
+        statsMap[match.homeTeam].goalsFor += homeGoals;
+        statsMap[match.homeTeam].goalsAgainst += awayGoals;
+        statsMap[match.awayTeam].goalsFor += awayGoals;
+        statsMap[match.awayTeam].goalsAgainst += homeGoals;
+
+        if (homeGoals > awayGoals) {
+          statsMap[match.homeTeam].won++;
+          statsMap[match.homeTeam].points += 3;
+          statsMap[match.awayTeam].lost++;
+        } else if (homeGoals < awayGoals) {
+          statsMap[match.awayTeam].won++;
+          statsMap[match.awayTeam].points += 3;
+          statsMap[match.homeTeam].lost++;
+        } else {
+          statsMap[match.homeTeam].drawn++;
+          statsMap[match.awayTeam].drawn++;
+          statsMap[match.homeTeam].points += 1;
+          statsMap[match.awayTeam].points += 1;
         }
       });
 
-      const homeGoals = typeof pred.homeGoals === "number" ? pred.homeGoals : 0;
-      const awayGoals = typeof pred.awayGoals === "number" ? pred.awayGoals : 0;
+      Object.values(statsMap).forEach(stats => {
+        stats.goalDifference = stats.goalsFor - stats.goalsAgainst;
+      });
 
-      statsMap[match.homeTeam].played++;
-      statsMap[match.awayTeam].played++;
-      statsMap[match.homeTeam].goalsFor += homeGoals;
-      statsMap[match.homeTeam].goalsAgainst += awayGoals;
-      statsMap[match.awayTeam].goalsFor += awayGoals;
-      statsMap[match.awayTeam].goalsAgainst += homeGoals;
+      return Object.values(statsMap).sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points;
+        if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
+        return b.goalsFor - a.goalsFor;
+      });
+    };
 
-      if (homeGoals > awayGoals) {
-        statsMap[match.homeTeam].won++;
-        statsMap[match.homeTeam].points += 3;
-        statsMap[match.awayTeam].lost++;
-      } else if (homeGoals < awayGoals) {
-        statsMap[match.awayTeam].won++;
-        statsMap[match.awayTeam].points += 3;
-        statsMap[match.homeTeam].lost++;
-      } else {
-        statsMap[match.homeTeam].drawn++;
-        statsMap[match.awayTeam].drawn++;
-        statsMap[match.homeTeam].points += 1;
-        statsMap[match.awayTeam].points += 1;
-      }
-    });
-
-    Object.values(statsMap).forEach(stats => {
-      stats.goalDifference = stats.goalsFor - stats.goalsAgainst;
-    });
-
-    return Object.values(statsMap).sort((a, b) => {
-      if (b.points !== a.points) return b.points - a.points;
-      if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
-      return b.goalsFor - a.goalsFor;
-    });
-  };
-
-  const groupedMatches = useMemo(() => {
-    const groups: Record<string, Match[]> = {};
-    const knockout: Match[] = [];
-
+    // Primero agrupar partidos de fase de grupos
     matches.forEach(match => {
       if (match.phase === "Group" && match.group) {
-        if (!groups[match.group]) groups[match.group] = [];
-        groups[match.group].push(match);
-      } else {
-        knockout.push(match);
+        const groupLetter = match.group.replace('Group ', '');
+        if (!groups[groupLetter]) groups[groupLetter] = [];
+        groups[groupLetter].push(match);
       }
     });
 
-    return { groups, knockout };
-  }, [matches]);
+    // Calcular standings de cada grupo
+    Object.keys(groups).forEach(groupKey => {
+      groupStandings[groupKey] = calculateGroupStandings(groups[groupKey]);
+    });
+
+    // Función para resolver nombres de equipos
+    const resolveTeamName = (placeholder: string): string => {
+      // Patrón: "1º Grupo A", "2º Grupo B"
+      const singleGroupPattern = /^([1-3])º Grupo ([A-L])$/i;
+      const singleMatch = placeholder.match(singleGroupPattern);
+      
+      if (singleMatch) {
+        const position = parseInt(singleMatch[1]) - 1;
+        const groupLetter = singleMatch[2].toUpperCase();
+        
+        const standings = groupStandings[groupLetter];
+        if (standings && standings[position]) {
+          return standings[position].team;
+        }
+      }
+
+      // Patrón: "2º L" (sin palabra "Grupo")
+      const shortPattern = /^([1-3])º\s+([A-L])$/i;
+      const shortMatch = placeholder.match(shortPattern);
+      
+      if (shortMatch) {
+        const position = parseInt(shortMatch[1]) - 1;
+        const groupLetter = shortMatch[2].toUpperCase();
+        
+        const standings = groupStandings[groupLetter];
+        if (standings && standings[position]) {
+          return standings[position].team;
+        }
+      }
+
+      return placeholder;
+    };
+
+    // Procesar partidos eliminatorios
+    matches.forEach(match => {
+      if (match.phase !== "Group") {
+        if (match.phase === "Round of 32") {
+          knockout.push({
+            ...match,
+            homeTeam: resolveTeamName(match.homeTeam),
+            awayTeam: resolveTeamName(match.awayTeam),
+          });
+        } else {
+          knockout.push(match);
+        }
+      }
+    });
+
+    return { groups, knockout, groupStandings };
+  }, [matches, predictions]);
 
   const handlePredictionChange = (matchId: number, field: "homeGoals" | "awayGoals", value: string) => {
     if (value === "") {
@@ -239,13 +295,41 @@ export default function PorraPage() {
     }
   };
 
+  const renderMatch = (match: Match) => (
+    <div key={match.id} className="bg-gray-800 border border-gray-700 rounded">
+      <div className="flex items-center justify-between p-2 border-b border-gray-700">
+        <span className="text-sm flex-1">{match.homeTeam}</span>
+        <input
+          type="text"
+          inputMode="numeric"
+          className="border border-gray-600 bg-gray-900 text-white p-1 w-10 text-center rounded text-sm"
+          value={predictions[match.id]?.homeGoals ?? 0}
+          onFocus={handleFocus}
+          onBlur={() => handleBlur(match.id, "homeGoals")}
+          onChange={e => handlePredictionChange(match.id, "homeGoals", e.target.value)}
+        />
+      </div>
+      <div className="flex items-center justify-between p-2">
+        <span className="text-sm flex-1">{match.awayTeam}</span>
+        <input
+          type="text"
+          inputMode="numeric"
+          className="border border-gray-600 bg-gray-900 text-white p-1 w-10 text-center rounded text-sm"
+          value={predictions[match.id]?.awayGoals ?? 0}
+          onFocus={handleFocus}
+          onBlur={() => handleBlur(match.id, "awayGoals")}
+          onChange={e => handlePredictionChange(match.id, "awayGoals", e.target.value)}
+        />
+      </div>
+    </div>
+  );
+
   return (
     <>
       <div className="min-h-screen bg-black text-white">
         <div className="max-w-8xl mx-auto p-6">
           <h1 className="text-3xl font-bold mb-6">Formulario de Porra Mundial 2026</h1>
 
-          {/* Información del participante */}
           <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 mb-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
@@ -258,7 +342,6 @@ export default function PorraPage() {
                   onChange={e => setParticipantName(e.target.value)}
                 />
               </div>
-
               <div>
                 <label className="block font-semibold mb-1">Nombre de la porra:</label>
                 <input
@@ -269,7 +352,6 @@ export default function PorraPage() {
                   onChange={e => setPorraName(e.target.value)}
                 />
               </div>
-
               <div>
                 <label className="block font-semibold mb-1">Pichichi:</label>
                 <input
@@ -283,17 +365,14 @@ export default function PorraPage() {
             </div>
           </div>
 
-          {/* Fase de Grupos */}
           <h2 className="text-2xl font-bold mb-4">Fase de Grupos</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-            {Object.entries(groupedMatches.groups).sort().map(([group, groupMatches]) => {
-              const standings = calculateGroupStandings(groupMatches);
+            {Object.entries(groupedMatches.groups).sort().map(([groupLetter, groupMatches]) => {
+              const standings = groupedMatches.groupStandings[groupLetter] || [];
               
               return (
-                <div key={group} className="bg-gray-900 border border-gray-800 rounded-lg p-5">
-                  <h3 className="text-xl font-bold mb-4 text-blue-400">Grupo {group.replace('Group ', '')}</h3>
-                  
-                  {/* Tabla de clasificación */}
+                <div key={groupLetter} className="bg-gray-900 border border-gray-800 rounded-lg p-5">
+                  <h3 className="text-xl font-bold mb-4 text-blue-400">Grupo {groupLetter}</h3>
                   <div className="mb-4 overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead className="bg-gray-800 text-xs">
@@ -322,8 +401,6 @@ export default function PorraPage() {
                       </tbody>
                     </table>
                   </div>
-
-                  {/* Partidos del grupo */}
                   <div className="space-y-2">
                     {groupMatches.map(match => (
                       <div key={match.id} className="flex items-center justify-between bg-gray-800 p-3 rounded">
@@ -358,40 +435,117 @@ export default function PorraPage() {
             })}
           </div>
 
-          {/* Eliminatorias */}
           {groupedMatches.knockout.length > 0 && (
             <>
               <h2 className="text-2xl font-bold mb-4">Eliminatorias</h2>
-              <div className="bg-gray-900 border border-gray-800 rounded-lg p-5 mb-6">
-                <div className="space-y-2">
-                  {groupedMatches.knockout.map(match => (
-                    <div key={match.id} className="flex items-center justify-between bg-gray-800 p-3 rounded">
-                      <div className="w-1/4 text-xs text-gray-400">{match.phase}</div>
-                      <span className="w-1/4 text-right">{match.homeTeam}</span>
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          className="border border-gray-700 bg-gray-900 text-white p-1 w-12 text-center rounded focus:outline-none focus:border-blue-500"
-                          value={predictions[match.id]?.homeGoals ?? 0}
-                          onFocus={handleFocus}
-                          onBlur={() => handleBlur(match.id, "homeGoals")}
-                          onChange={e => handlePredictionChange(match.id, "homeGoals", e.target.value)}
-                        />
-                        <span className="text-gray-500">-</span>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          className="border border-gray-700 bg-gray-900 text-white p-1 w-12 text-center rounded focus:outline-none focus:border-blue-500"
-                          value={predictions[match.id]?.awayGoals ?? 0}
-                          onFocus={handleFocus}
-                          onBlur={() => handleBlur(match.id, "awayGoals")}
-                          onChange={e => handlePredictionChange(match.id, "awayGoals", e.target.value)}
-                        />
-                      </div>
-                      <span className="w-1/4">{match.awayTeam}</span>
-                    </div>
-                  ))}
+              <div className="bg-gray-900 border border-gray-800 rounded-lg p-8 mb-6 overflow-x-auto">
+                <div className="flex justify-between gap-4 min-w-[1400px]">
+                  <div className="flex flex-col gap-8 w-48">
+                    <div className="text-center text-sm font-semibold text-blue-400 mb-2">Round of 32</div>
+                    {groupedMatches.knockout
+                      .filter(m => m.phase === "Round of 32")
+                      .slice(0, 8)
+                      .map(renderMatch)}
+                  </div>
+
+                  <div className="flex flex-col gap-16 w-48 pt-12">
+                    <div className="text-center text-sm font-semibold text-blue-400 mb-2">Round of 16</div>
+                    {groupedMatches.knockout
+                      .filter(m => m.phase === "Round of 16")
+                      .slice(0, 4)
+                      .map(renderMatch)}
+                  </div>
+
+                  <div className="flex flex-col gap-32 w-48 pt-28">
+                    <div className="text-center text-sm font-semibold text-blue-400 mb-2">Quarter-final</div>
+                    {groupedMatches.knockout
+                      .filter(m => m.phase === "Quarterfinal" || m.phase === "Quarter-final")
+                      .slice(0, 2)
+                      .map(renderMatch)}
+                  </div>
+
+                  <div className="flex flex-col gap-64 w-48 pt-48">
+                    <div className="text-center text-sm font-semibold text-blue-400 mb-2">Semi-final</div>
+                    {groupedMatches.knockout
+                      .filter(m => m.phase === "Semifinal" || m.phase === "Semi-final")
+                      .slice(0, 1)
+                      .map(renderMatch)}
+                  </div>
+
+                  <div className="flex flex-col justify-center w-56 gap-4">
+                    <div className="text-center text-sm font-semibold text-blue-400 mb-2">Final</div>
+                    {groupedMatches.knockout
+                      .filter(m => m.phase === "Final")
+                      .map(match => (
+                        <div key={match.id} className="bg-gray-800 border-2 border-yellow-500 rounded shadow-lg shadow-yellow-500/20">
+                          <div className="flex items-center justify-between p-3 border-b border-gray-700">
+                            <span className="text-sm flex-1 font-semibold">{match.homeTeam}</span>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              className="border border-gray-600 bg-gray-900 text-white p-1 w-10 text-center rounded text-sm font-bold"
+                              value={predictions[match.id]?.homeGoals ?? 0}
+                              onFocus={handleFocus}
+                              onBlur={() => handleBlur(match.id, "homeGoals")}
+                              onChange={e => handlePredictionChange(match.id, "homeGoals", e.target.value)}
+                            />
+                          </div>
+                          <div className="flex items-center justify-between p-3">
+                            <span className="text-sm flex-1 font-semibold">{match.awayTeam}</span>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              className="border border-gray-600 bg-gray-900 text-white p-1 w-10 text-center rounded text-sm font-bold"
+                              value={predictions[match.id]?.awayGoals ?? 0}
+                              onFocus={handleFocus}
+                              onBlur={() => handleBlur(match.id, "awayGoals")}
+                              onChange={e => handlePredictionChange(match.id, "awayGoals", e.target.value)}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    
+                    {groupedMatches.knockout
+                      .filter(m => m.phase === "Third Place")
+                      .map(match => (
+                        <div key={match.id} className="mt-8">
+                          <div className="text-center text-xs text-gray-400 mb-2">Play-off for third place</div>
+                          {renderMatch(match)}
+                        </div>
+                      ))}
+                  </div>
+
+                  <div className="flex flex-col gap-64 w-48 pt-48">
+                    <div className="text-center text-sm font-semibold text-blue-400 mb-2">Semi-final</div>
+                    {groupedMatches.knockout
+                      .filter(m => m.phase === "Semifinal" || m.phase === "Semi-final")
+                      .slice(1, 2)
+                      .map(renderMatch)}
+                  </div>
+
+                  <div className="flex flex-col gap-32 w-48 pt-28">
+                    <div className="text-center text-sm font-semibold text-blue-400 mb-2">Quarter-final</div>
+                    {groupedMatches.knockout
+                      .filter(m => m.phase === "Quarterfinal" || m.phase === "Quarter-final")
+                      .slice(2, 4)
+                      .map(renderMatch)}
+                  </div>
+
+                  <div className="flex flex-col gap-16 w-48 pt-12">
+                    <div className="text-center text-sm font-semibold text-blue-400 mb-2">Round of 16</div>
+                    {groupedMatches.knockout
+                      .filter(m => m.phase === "Round of 16")
+                      .slice(4, 8)
+                      .map(renderMatch)}
+                  </div>
+
+                  <div className="flex flex-col gap-8 w-48">
+                    <div className="text-center text-sm font-semibold text-blue-400 mb-2">Round of 32</div>
+                    {groupedMatches.knockout
+                      .filter(m => m.phase === "Round of 32")
+                      .slice(8, 16)
+                      .map(renderMatch)}
+                  </div>
                 </div>
               </div>
             </>
@@ -406,7 +560,6 @@ export default function PorraPage() {
         </div>
       </div>
 
-      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
           <div className={`bg-gray-900 rounded-lg shadow-xl max-w-md w-full border-2 ${
@@ -426,10 +579,7 @@ export default function PorraPage() {
                   ×
                 </button>
               </div>
-              
-              <p className="text-white text-lg">
-                {modalMessage}
-              </p>
+              <p className="text-white text-lg">{modalMessage}</p>
             </div>
           </div>
         </div>
