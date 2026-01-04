@@ -9,85 +9,111 @@ const adapter = new PrismaPg({
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  // 1️⃣ Borrar partidos existentes
-  await prisma.match.deleteMany({});
+  // 1️⃣ Borrar partidos existentes y reiniciar IDs
+  await prisma.$executeRawUnsafe(
+    `TRUNCATE TABLE "Match" RESTART IDENTITY CASCADE;`
+  );
 
-  // 2️⃣ Seed de partidos de fase de grupos
+  // 2️⃣ Seed de partidos de fase de grupos (6 por grupo)
   const groupMatches = [
-    // Grupo A
+    // ===== Grupo A =====
     { homeTeam: "México", awayTeam: "Sudáfrica", phase: "Group", group: "A", matchOrder: 1 },
     { homeTeam: "Corea del Sur", awayTeam: "Dinamarca/Macedonia/República Checa/Irlanda", phase: "Group", group: "A", matchOrder: 2 },
     { homeTeam: "Dinamarca/Macedonia/República Checa/Irlanda", awayTeam: "Sudáfrica", phase: "Group", group: "A", matchOrder: 3 },
     { homeTeam: "México", awayTeam: "Corea del Sur", phase: "Group", group: "A", matchOrder: 4 },
+    { homeTeam: "Dinamarca/Macedonia/República Checa/Irlanda", awayTeam: "México", phase: "Group", group: "A", matchOrder: 5 },
+    { homeTeam: "Sudáfrica", awayTeam: "Corea del Sur", phase: "Group", group: "A", matchOrder: 6 },
 
-    // Grupo B
-    { homeTeam: "Canadá", awayTeam: "Italia/Nigeria/Gales/Bosnia", phase: "Group", group: "B", matchOrder: 5 },
-    { homeTeam: "Catar", awayTeam: "Suiza", phase: "Group", group: "B", matchOrder: 6 },
-    { homeTeam: "Suiza", awayTeam: "Italia/Nigeria/Gales/Bosnia", phase: "Group", group: "B", matchOrder: 7 },
-    { homeTeam: "Canadá", awayTeam: "Catar", phase: "Group", group: "B", matchOrder: 8 },
+    // ===== Grupo B =====
+    { homeTeam: "Canadá", awayTeam: "Italia/Nigeria/Gales/Bosnia", phase: "Group", group: "B", matchOrder: 7 },
+    { homeTeam: "Catar", awayTeam: "Suiza", phase: "Group", group: "B", matchOrder: 8 },
+    { homeTeam: "Suiza", awayTeam: "Italia/Nigeria/Gales/Bosnia", phase: "Group", group: "B", matchOrder: 9 },
+    { homeTeam: "Canadá", awayTeam: "Catar", phase: "Group", group: "B", matchOrder: 10 },
+    { homeTeam: "Italia/Nigeria/Gales/Bosnia", awayTeam: "Canadá", phase: "Group", group: "B", matchOrder: 11 },
+    { homeTeam: "Suiza", awayTeam: "Catar", phase: "Group", group: "B", matchOrder: 12 },
 
-    // Grupo C
-    { homeTeam: "Brasil", awayTeam: "Marruecos", phase: "Group", group: "C", matchOrder: 9 },
-    { homeTeam: "Haití", awayTeam: "Escocia", phase: "Group", group: "C", matchOrder: 10 },
-    { homeTeam: "Escocia", awayTeam: "Marruecos", phase: "Group", group: "C", matchOrder: 11 },
-    { homeTeam: "Brasil", awayTeam: "Haití", phase: "Group", group: "C", matchOrder: 12 },
+    // ===== Grupo C =====
+    { homeTeam: "Brasil", awayTeam: "Marruecos", phase: "Group", group: "C", matchOrder: 13 },
+    { homeTeam: "Haití", awayTeam: "Escocia", phase: "Group", group: "C", matchOrder: 14 },
+    { homeTeam: "Escocia", awayTeam: "Marruecos", phase: "Group", group: "C", matchOrder: 15 },
+    { homeTeam: "Brasil", awayTeam: "Haití", phase: "Group", group: "C", matchOrder: 16 },
+    { homeTeam: "Marruecos", awayTeam: "Brasil", phase: "Group", group: "C", matchOrder: 17 },
+    { homeTeam: "Escocia", awayTeam: "Haití", phase: "Group", group: "C", matchOrder: 18 },
 
-    // Grupo D
-    { homeTeam: "Estados Unidos", awayTeam: "Paraguay", phase: "Group", group: "D", matchOrder: 13 },
-    { homeTeam: "Australia", awayTeam: "Turquía/Rumania/Eslovaquia/Kosovo", phase: "Group", group: "D", matchOrder: 14 },
-    { homeTeam: "Estados Unidos", awayTeam: "Australia", phase: "Group", group: "D", matchOrder: 15 },
-    { homeTeam: "Paraguay", awayTeam: "Turquía/Rumania/Eslovaquia/Kosovo", phase: "Group", group: "D", matchOrder: 16 },
+    // ===== Grupo D =====
+    { homeTeam: "Estados Unidos", awayTeam: "Paraguay", phase: "Group", group: "D", matchOrder: 19 },
+    { homeTeam: "Australia", awayTeam: "Turquía/Rumania/Eslovaquia/Kosovo", phase: "Group", group: "D", matchOrder: 20 },
+    { homeTeam: "Estados Unidos", awayTeam: "Australia", phase: "Group", group: "D", matchOrder: 21 },
+    { homeTeam: "Paraguay", awayTeam: "Turquía/Rumania/Eslovaquia/Kosovo", phase: "Group", group: "D", matchOrder: 22 },
+    { homeTeam: "Paraguay", awayTeam: "Estados Unidos", phase: "Group", group: "D", matchOrder: 23 },
+    { homeTeam: "Turquía/Rumania/Eslovaquia/Kosovo", awayTeam: "Australia", phase: "Group", group: "D", matchOrder: 24 },
 
-    // Grupo E
-    { homeTeam: "Alemania", awayTeam: "Curazao", phase: "Group", group: "E", matchOrder: 17 },
-    { homeTeam: "Costa de Marfil", awayTeam: "Ecuador", phase: "Group", group: "E", matchOrder: 18 },
-    { homeTeam: "Alemania", awayTeam: "Costa de Marfil", phase: "Group", group: "E", matchOrder: 19 },
-    { homeTeam: "Ecuador", awayTeam: "Curazao", phase: "Group", group: "E", matchOrder: 20 },
+    // ===== Grupo E =====
+    { homeTeam: "Alemania", awayTeam: "Curazao", phase: "Group", group: "E", matchOrder: 25 },
+    { homeTeam: "Costa de Marfil", awayTeam: "Ecuador", phase: "Group", group: "E", matchOrder: 26 },
+    { homeTeam: "Alemania", awayTeam: "Costa de Marfil", phase: "Group", group: "E", matchOrder: 27 },
+    { homeTeam: "Ecuador", awayTeam: "Curazao", phase: "Group", group: "E", matchOrder: 28 },
+    { homeTeam: "Curazao", awayTeam: "Alemania", phase: "Group", group: "E", matchOrder: 29 },
+    { homeTeam: "Ecuador", awayTeam: "Costa de Marfil", phase: "Group", group: "E", matchOrder: 30 },
 
-    // Grupo F
-    { homeTeam: "Países Bajos", awayTeam: "Japón", phase: "Group", group: "F", matchOrder: 21 },
-    { homeTeam: "Ucrania/Suecia/Polonia/Albania", awayTeam: "Túnez", phase: "Group", group: "F", matchOrder: 22 },
-    { homeTeam: "Países Bajos", awayTeam: "Ucrania/Suecia/Polonia/Albania", phase: "Group", group: "F", matchOrder: 23 },
-    { homeTeam: "Túnez", awayTeam: "Japón", phase: "Group", group: "F", matchOrder: 24 },
+    // ===== Grupo F =====
+    { homeTeam: "Países Bajos", awayTeam: "Japón", phase: "Group", group: "F", matchOrder: 31 },
+    { homeTeam: "Ucrania/Suecia/Polonia/Albania", awayTeam: "Túnez", phase: "Group", group: "F", matchOrder: 32 },
+    { homeTeam: "Países Bajos", awayTeam: "Ucrania/Suecia/Polonia/Albania", phase: "Group", group: "F", matchOrder: 33 },
+    { homeTeam: "Túnez", awayTeam: "Japón", phase: "Group", group: "F", matchOrder: 34 },
+    { homeTeam: "Japón", awayTeam: "Países Bajos", phase: "Group", group: "F", matchOrder: 35 },
+    { homeTeam: "Túnez", awayTeam: "Ucrania/Suecia/Polonia/Albania", phase: "Group", group: "F", matchOrder: 36 },
 
-    // Grupo G
-    { homeTeam: "Bélgica", awayTeam: "Egipto", phase: "Group", group: "G", matchOrder: 25 },
-    { homeTeam: "Irán", awayTeam: "Nueva Zelanda", phase: "Group", group: "G", matchOrder: 26 },
-    { homeTeam: "Bélgica", awayTeam: "Irán", phase: "Group", group: "G", matchOrder: 27 },
-    { homeTeam: "Egipto", awayTeam: "Nueva Zelanda", phase: "Group", group: "G", matchOrder: 28 },
+    // ===== Grupo G =====
+    { homeTeam: "Bélgica", awayTeam: "Egipto", phase: "Group", group: "G", matchOrder: 37 },
+    { homeTeam: "Irán", awayTeam: "Nueva Zelanda", phase: "Group", group: "G", matchOrder: 38 },
+    { homeTeam: "Bélgica", awayTeam: "Irán", phase: "Group", group: "G", matchOrder: 39 },
+    { homeTeam: "Egipto", awayTeam: "Nueva Zelanda", phase: "Group", group: "G", matchOrder: 40 },
+    { homeTeam: "Egipto", awayTeam: "Bélgica", phase: "Group", group: "G", matchOrder: 41 },
+    { homeTeam: "Nueva Zelanda", awayTeam: "Irán", phase: "Group", group: "G", matchOrder: 42 },
 
-    // Grupo H
-    { homeTeam: "España", awayTeam: "Cabo Verde", phase: "Group", group: "H", matchOrder: 29 },
-    { homeTeam: "Arabia Saudí", awayTeam: "Uruguay", phase: "Group", group: "H", matchOrder: 30 },
-    { homeTeam: "España", awayTeam: "Arabia Saudí", phase: "Group", group: "H", matchOrder: 31 },
-    { homeTeam: "Cabo Verde", awayTeam: "Uruguay", phase: "Group", group: "H", matchOrder: 32 },
+    // ===== Grupo H =====
+    { homeTeam: "España", awayTeam: "Cabo Verde", phase: "Group", group: "H", matchOrder: 43 },
+    { homeTeam: "Arabia Saudí", awayTeam: "Uruguay", phase: "Group", group: "H", matchOrder: 44 },
+    { homeTeam: "España", awayTeam: "Arabia Saudí", phase: "Group", group: "H", matchOrder: 45 },
+    { homeTeam: "Cabo Verde", awayTeam: "Uruguay", phase: "Group", group: "H", matchOrder: 46 },
+    { homeTeam: "Cabo Verde", awayTeam: "España", phase: "Group", group: "H", matchOrder: 47 },
+    { homeTeam: "Uruguay", awayTeam: "Arabia Saudí", phase: "Group", group: "H", matchOrder: 48 },
 
-    // Grupo I
-    { homeTeam: "Francia", awayTeam: "Senegal", phase: "Group", group: "I", matchOrder: 33 },
-    { homeTeam: "Irak/Bolivia/Surinam", awayTeam: "Noruega", phase: "Group", group: "I", matchOrder: 34 },
-    { homeTeam: "Francia", awayTeam: "Irak/Bolivia/Surinam", phase: "Group", group: "I", matchOrder: 35 },
-    { homeTeam: "Noruega", awayTeam: "Senegal", phase: "Group", group: "I", matchOrder: 36 },
+    // ===== Grupo I =====
+    { homeTeam: "Francia", awayTeam: "Senegal", phase: "Group", group: "I", matchOrder: 49 },
+    { homeTeam: "Irak/Bolivia/Surinam", awayTeam: "Noruega", phase: "Group", group: "I", matchOrder: 50 },
+    { homeTeam: "Francia", awayTeam: "Irak/Bolivia/Surinam", phase: "Group", group: "I", matchOrder: 51 },
+    { homeTeam: "Noruega", awayTeam: "Senegal", phase: "Group", group: "I", matchOrder: 52 },
+    { homeTeam: "Senegal", awayTeam: "Francia", phase: "Group", group: "I", matchOrder: 53 },
+    { homeTeam: "Noruega", awayTeam: "Irak/Bolivia/Surinam", phase: "Group", group: "I", matchOrder: 54 },
 
-    // Grupo J
-    { homeTeam: "Argentina", awayTeam: "Argelia", phase: "Group", group: "J", matchOrder: 37 },
-    { homeTeam: "Austria", awayTeam: "Jordania", phase: "Group", group: "J", matchOrder: 38 },
-    { homeTeam: "Argentina", awayTeam: "Austria", phase: "Group", group: "J", matchOrder: 39 },
-    { homeTeam: "Jordania", awayTeam: "Argelia", phase: "Group", group: "J", matchOrder: 40 },
+    // ===== Grupo J =====
+    { homeTeam: "Argentina", awayTeam: "Argelia", phase: "Group", group: "J", matchOrder: 55 },
+    { homeTeam: "Austria", awayTeam: "Jordania", phase: "Group", group: "J", matchOrder: 56 },
+    { homeTeam: "Argentina", awayTeam: "Austria", phase: "Group", group: "J", matchOrder: 57 },
+    { homeTeam: "Jordania", awayTeam: "Argelia", phase: "Group", group: "J", matchOrder: 58 },
+    { homeTeam: "Argelia", awayTeam: "Argentina", phase: "Group", group: "J", matchOrder: 59 },
+    { homeTeam: "Jordania", awayTeam: "Austria", phase: "Group", group: "J", matchOrder: 60 },
 
-    // Grupo K
-    { homeTeam: "Portugal", awayTeam: "Jamaica/RD de Congo/Nueva Caledonia", phase: "Group", group: "K", matchOrder: 41 },
-    { homeTeam: "Uzbekistán", awayTeam: "Colombia", phase: "Group", group: "K", matchOrder: 42 },
-    { homeTeam: "Portugal", awayTeam: "Uzbekistán", phase: "Group", group: "K", matchOrder: 43 },
-    { homeTeam: "Colombia", awayTeam: "Jamaica/RD de Congo/Nueva Caledonia", phase: "Group", group: "K", matchOrder: 44 },
+    // ===== Grupo K =====
+    { homeTeam: "Portugal", awayTeam: "Jamaica/RD de Congo/Nueva Caledonia", phase: "Group", group: "K", matchOrder: 61 },
+    { homeTeam: "Uzbekistán", awayTeam: "Colombia", phase: "Group", group: "K", matchOrder: 62 },
+    { homeTeam: "Portugal", awayTeam: "Uzbekistán", phase: "Group", group: "K", matchOrder: 63 },
+    { homeTeam: "Colombia", awayTeam: "Jamaica/RD de Congo/Nueva Caledonia", phase: "Group", group: "K", matchOrder: 64 },
+    { homeTeam: "Jamaica/RD de Congo/Nueva Caledonia", awayTeam: "Portugal", phase: "Group", group: "K", matchOrder: 65 },
+    { homeTeam: "Colombia", awayTeam: "Uzbekistán", phase: "Group", group: "K", matchOrder: 66 },
 
-    // Grupo L
-    { homeTeam: "Inglaterra", awayTeam: "Croacia", phase: "Group", group: "L", matchOrder: 45 },
-    { homeTeam: "Ghana", awayTeam: "Panamá", phase: "Group", group: "L", matchOrder: 46 },
-    { homeTeam: "Inglaterra", awayTeam: "Ghana", phase: "Group", group: "L", matchOrder: 47 },
-    { homeTeam: "Croacia", awayTeam: "Panamá", phase: "Group", group: "L", matchOrder: 48 },
+    // ===== Grupo L =====
+    { homeTeam: "Inglaterra", awayTeam: "Croacia", phase: "Group", group: "L", matchOrder: 67 },
+    { homeTeam: "Ghana", awayTeam: "Panamá", phase: "Group", group: "L", matchOrder: 68 },
+    { homeTeam: "Inglaterra", awayTeam: "Ghana", phase: "Group", group: "L", matchOrder: 69 },
+    { homeTeam: "Croacia", awayTeam: "Panamá", phase: "Group", group: "L", matchOrder: 70 },
+    { homeTeam: "Croacia", awayTeam: "Inglaterra", phase: "Group", group: "L", matchOrder: 71 },
+    { homeTeam: "Panamá", awayTeam: "Ghana", phase: "Group", group: "L", matchOrder: 72 },
   ];
 
-  // 3️⃣ Seed de knockout (16avos hasta final)
+  // 3️⃣ Seed de knockout (continuando con 73 → 96)
   const knockoutMatches = [
     { homeTeam: "2º Grupo A", awayTeam: "2º Grupo B", phase: "Round of 16", matchOrder: 73 },
     { homeTeam: "1º Grupo E", awayTeam: "3º Grupo A/B/C/D/F", phase: "Round of 16", matchOrder: 74 },
@@ -106,24 +132,19 @@ async function main() {
     { homeTeam: "1º Grupo K", awayTeam: "3º Grupo D/E/I/J/L", phase: "Round of 16", matchOrder: 87 },
     { homeTeam: "2º Grupo D", awayTeam: "2º Grupo G", phase: "Round of 16", matchOrder: 88 },
 
-    // Cuartos
-    { homeTeam: "Ganador Partido 89", awayTeam: "Ganador Partido 90", phase: "Quarterfinal", matchOrder: 97 },
-    { homeTeam: "Ganador Partido 93", awayTeam: "Ganador Partido 94", phase: "Quarterfinal", matchOrder: 98 },
-    { homeTeam: "Ganador Partido 91", awayTeam: "Ganador Partido 92", phase: "Quarterfinal", matchOrder: 99 },
-    { homeTeam: "Ganador Partido 95", awayTeam: "Ganador Partido 96", phase: "Quarterfinal", matchOrder: 100 },
+    { homeTeam: "Ganador Partido 89", awayTeam: "Ganador Partido 90", phase: "Quarterfinal", matchOrder: 89 },
+    { homeTeam: "Ganador Partido 93", awayTeam: "Ganador Partido 94", phase: "Quarterfinal", matchOrder: 90 },
+    { homeTeam: "Ganador Partido 91", awayTeam: "Ganador Partido 92", phase: "Quarterfinal", matchOrder: 91 },
+    { homeTeam: "Ganador Partido 95", awayTeam: "Ganador Partido 96", phase: "Quarterfinal", matchOrder: 92 },
 
-    // Semifinales
-    { homeTeam: "Ganador Partido 97", awayTeam: "Ganador Partido 98", phase: "Semifinal", matchOrder: 101 },
-    { homeTeam: "Ganador Partido 99", awayTeam: "Ganador Partido 100", phase: "Semifinal", matchOrder: 102 },
+    { homeTeam: "Ganador Partido 97", awayTeam: "Ganador Partido 98", phase: "Semifinal", matchOrder: 93 },
+    { homeTeam: "Ganador Partido 99", awayTeam: "Ganador Partido 100", phase: "Semifinal", matchOrder: 94 },
 
-    // Tercer puesto
-    { homeTeam: "Perdedor Partido 101", awayTeam: "Perdedor Partido 102", phase: "Third Place", matchOrder: 103 },
-
-    // Final
-    { homeTeam: "Ganador Partido 101", awayTeam: "Ganador Partido 102", phase: "Final", matchOrder: 104 },
+    { homeTeam: "Perdedor Partido 101", awayTeam: "Perdedor Partido 102", phase: "Third Place", matchOrder: 95 },
+    { homeTeam: "Ganador Partido 101", awayTeam: "Ganador Partido 102", phase: "Final", matchOrder: 96 },
   ];
 
-  // 4️⃣ Insertar partidos en la DB
+  // 4️⃣ Insertar todos los partidos
   for (const match of [...groupMatches, ...knockoutMatches]) {
     await prisma.match.create({ data: match });
   }
