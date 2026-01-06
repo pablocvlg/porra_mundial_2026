@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 
+type PredictionInput = {
+  matchId: number;
+  homeTeam?: string;
+  awayTeam?: string;
+  homeGoals: number;
+  awayGoals: number;
+};
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -28,9 +36,9 @@ export async function POST(request: NextRequest) {
 
     // Validar que el participante esté permitido en esa porra
     const allowed = await prisma.allowedParticipant.findFirst({
-      where: { 
-        name: participantName, 
-        porraId: porra.id 
+      where: {
+        name: participantName,
+        porraId: porra.id
       },
     });
 
@@ -56,13 +64,60 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Comprobar que no hay placeholders sin resolver en knockout
+    const invalidPredictions = predictions.filter((pred: PredictionInput) => {
+      // Solo validar si tiene homeTeam y awayTeam (partidos knockout)
+      if (pred.homeTeam || pred.awayTeam) {
+        const ganadorPattern = /^(?:Ganador|Perdedor)(?: del| de)? Partido \d+$/i;
+        // const grupoPattern = /^\d+º Grupo [A-L](?:\/[A-L])*$/i;
+        
+        const homeIsPlaceholder = pred.homeTeam && (
+          ganadorPattern.test(pred.homeTeam)// || 
+          // grupoPattern.test(pred.homeTeam)
+        );
+        
+        const awayIsPlaceholder = pred.awayTeam && (
+          ganadorPattern.test(pred.awayTeam)// || 
+          //grupoPattern.test(pred.awayTeam)
+        );
+        
+        return homeIsPlaceholder || awayIsPlaceholder;
+      }
+      return false;
+    });
+
+    if (invalidPredictions.length > 0) {
+      console.log("❌ Predicciones inválidas encontradas:", invalidPredictions);
+      return NextResponse.json(
+        { 
+          error: "Debes completar todos los partidos eliminatorios.",
+          details: invalidPredictions.map((p: PredictionInput) => ({
+            matchId: p.matchId,
+            homeTeam: p.homeTeam,
+            awayTeam: p.awayTeam
+          }))
+        },
+        { status: 400 }
+      );
+    }
+
     // Crear entry y predicciones
     const entry = await prisma.entry.create({
       data: {
         participantName,
         porraId: porra.id,
         pichichi,
-        predictions: { create: predictions },
+        predictions: {
+          create: predictions.map((pred: PredictionInput) => {
+            return {
+              matchId: pred.matchId,
+              homeTeam: pred.homeTeam ?? null,
+              awayTeam: pred.awayTeam ?? null,
+              homeGoals: pred.homeGoals,
+              awayGoals: pred.awayGoals,
+            };
+          }),
+        },
       },
       include: {
         predictions: true,
@@ -70,16 +125,16 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(
-      { 
+      {
         message: "Porra enviada correctamente.",
-        entry 
-      }, 
+        entry
+      },
       { status: 200 }
     );
+
   } catch (error) {
-    console.error("Error creating entry:", error);
     return NextResponse.json(
-      { error: "Error al crear la entrada." },
+      { error: "Error al enviar la porra." },
       { status: 500 }
     );
   }

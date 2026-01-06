@@ -230,8 +230,8 @@ export default function PorraPage() {
 
     // Función para resolver nombres de equipos
     const resolveTeamName = (placeholder: string): string => {
-      // Patrón: "1º Grupo A", "2º Grupo B", "3º Grupo C"
-      const singleGroupPattern = /^([1-3])º Grupo ([A-L])$/i;
+      // Patrón: "1º Grupo A", "2º Grupo B"
+      const singleGroupPattern = /^([1-2])º Grupo ([A-L])$/i;
       const singleMatch = placeholder.match(singleGroupPattern);
       
       if (singleMatch) {
@@ -456,11 +456,26 @@ export default function PorraPage() {
           participantName,
           porraName,
           pichichi,
-          predictions: matches.map(match => ({
-            matchId: match.id,
-            homeGoals: typeof predictions[match.id].homeGoals === "number" ? predictions[match.id].homeGoals : 0,
-            awayGoals: typeof predictions[match.id].awayGoals === "number" ? predictions[match.id].awayGoals : 0,
-          })),
+          predictions: matches.map(match => {
+            const basePredicton = {
+              matchId: match.id,
+              homeGoals: typeof predictions[match.id].homeGoals === "number" ? predictions[match.id].homeGoals : 0,
+              awayGoals: typeof predictions[match.id].awayGoals === "number" ? predictions[match.id].awayGoals : 0,
+            };
+
+            // Solo añadir homeTeam y awayTeam para partidos de knockout
+            if (match.phase !== "Group") {
+              const resolvedMatch = groupedMatches.knockout.find(m => m.id === match.id);
+              if (resolvedMatch) {
+                return {
+                  ...basePredicton,
+                  homeTeam: resolvedMatch.homeTeam,
+                  awayTeam: resolvedMatch.awayTeam,
+                };
+              }
+            }
+            return basePredicton;
+          }),
         }),
       });
 
