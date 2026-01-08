@@ -568,40 +568,40 @@ export default function PorraPage() {
 
   return (
     <>
-      <div className="min-h-screen bg-black text-white">
+      <div className="w-full min-h-screen bg-black bg-center bg-no-repeat bg-fixed text-white pt-16"
+      style={{ backgroundImage: `url('/background.avif')` }}>
         <div className="max-w-8xl mx-auto p-6">
           <h1 className="text-3xl font-bold mb-6">Formulario de Porra Mundial 2026</h1>
-
           <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 mb-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block font-semibold mb-1">Nombre del participante:</label>
+                <label className="block font-semibold mb-2">Nombre del participante:</label>
                 <input
                   type="text"
                   maxLength={35}
                   className="border border-gray-700 bg-gray-800 text-white p-2 w-full rounded focus:outline-none focus:border-blue-500"
-                  placeholder="Ej: Juan Pérez"
+                  placeholder=""
                   value={participantName}
                   onChange={e => handleNameChange('participantName', e.target.value)}
                 />
               </div>
               <div>
-                <label className="block font-semibold mb-1">Nombre de la porra:</label>
+                <label className="block font-semibold mb-2">Nombre de la porra:</label>
                 <input
                   type="text"
                   maxLength={35}
                   className="border border-gray-700 bg-gray-800 text-white p-2 w-full rounded focus:outline-none focus:border-blue-500"
-                  placeholder="Ej: Porra Oficina 2026"
+                  placeholder=""
                   value={porraName}
                   onChange={e => handleNameChange('porraName', e.target.value)}
                 />
               </div>
               <div>
-                <label className="block font-semibold mb-1">Pichichi:</label>
+                <label className="block font-semibold mb-2">Pichichi:</label>
                 <input
                   type="text"
                   className="border border-gray-700 bg-gray-800 text-white p-2 w-full rounded focus:outline-none focus:border-blue-500"
-                  placeholder="Ej: Kylian Mbappé"
+                  placeholder=""
                   value={pichichi}
                   onChange={e => setPichichi(e.target.value)}
                 />

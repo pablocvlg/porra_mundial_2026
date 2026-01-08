@@ -1,7 +1,7 @@
-export default function HomePage() {
-  return (
-    <div className="min-h-screen bg-black">
-      {/* Página vacía con fondo negro */}
-    </div>
-  );
+"use client";
+
+import HomePage from "./home/page"; // importa tu HomePage desde app/home/page.tsx
+
+export default function Page() {
+  return <HomePage />;
 }

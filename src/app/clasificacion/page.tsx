@@ -97,10 +97,10 @@ export default function PorraStatusPage() {
   const selectedEntry = porraData?.allEntries.find(e => e.id === selectedParticipantId);
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-black bg-no-repeat bg-center text-white pt-16"
+    style={{ backgroundImage: `url('/background.avif')` }}>
       <div className="max-w-7xl mx-auto p-6">
         <h1 className="text-3xl font-bold mb-6">Estado de la Porra</h1>
-
         {/* Buscador o Botón de Reset */}
         {!porraData ? (
           <div className="bg-gray-900 rounded-lg shadow-md p-6 mb-6 border border-gray-800">
@@ -108,11 +108,11 @@ export default function PorraStatusPage() {
             
             <div className="flex gap-4">
               <div className="flex-1">
-                <label className="block font-semibold mb-1">Nombre de la porra:</label>
+                <label className="block font-semibold mb-2">Nombre de la porra:</label>
                 <input
                   type="text"
                   className="border border-gray-700 bg-gray-800 text-white p-2 w-full rounded focus:outline-none focus:border-blue-500"
-                  placeholder="Ej: Porra Oficina 2026"
+                  placeholder=""
                   value={porraName}
                   onChange={e => setPorraName(e.target.value)}
                   onKeyPress={e => e.key === "Enter" && handleSearch()}
