@@ -572,7 +572,7 @@ export default function PorraPage() {
       style={{ backgroundImage: `url('/background.avif')` }}>
         <div className="max-w-8xl mx-auto p-6">
           <h1 className="text-3xl font-bold mb-6">Formulario de Porra Mundial 2026</h1>
-          <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 mb-6">
+          <div className="bg-gray-900/50 backdrop-blur-md border border-gray-800/50 rounded-lg p-6 mb-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block font-semibold mb-2">Nombre del participante:</label>
@@ -615,7 +615,7 @@ export default function PorraPage() {
               const standings = groupedMatches.groupStandings[groupLetter] || [];
               
               return (
-                <div key={groupLetter} className="bg-gray-900 border border-gray-800 rounded-lg p-5">
+                <div key={groupLetter} className="bg-gray-900/80 border border-gray-800 rounded-lg p-5">
                   <h3 className="text-xl font-bold mb-4 text-blue-400">Grupo {groupLetter}</h3>
                   <div className="mb-4 overflow-x-auto">
                     <table className="w-full text-sm">
@@ -682,7 +682,7 @@ export default function PorraPage() {
           {groupedMatches.knockout.length > 0 && (
             <>
               <h2 className="text-2xl font-bold mb-4">Eliminatorias</h2>
-              <div className="bg-gray-900 border border-gray-800 rounded-lg p-8 mb-6 overflow-x-auto">
+              <div className="bg-gray-900/90 border border-gray-800 rounded-lg p-8 mb-6 overflow-x-auto">
                 <div className="flex justify-between gap-4 min-w-[1400px] h-[1200px]">
                   {/* Round of 32 - Izquierda */}
                   <div className="flex flex-col justify-around w-48">
