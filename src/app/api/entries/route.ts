@@ -3,10 +3,11 @@ import { prisma } from "../../../../lib/prisma";
 
 type PredictionInput = {
   matchId: number;
-  homeTeam?: string;
-  awayTeam?: string;
   homeGoals: number;
   awayGoals: number;
+  homeTeam?: string;
+  awayTeam?: string;
+  penaltyWinner?: string;
 };
 
 export async function POST(request: NextRequest) {
@@ -111,10 +112,11 @@ export async function POST(request: NextRequest) {
           create: predictions.map((pred: PredictionInput) => {
             return {
               matchId: pred.matchId,
-              homeTeam: pred.homeTeam ?? null,
-              awayTeam: pred.awayTeam ?? null,
               homeGoals: pred.homeGoals,
               awayGoals: pred.awayGoals,
+              homeTeam: pred.homeTeam ?? null,
+              awayTeam: pred.awayTeam ?? null,
+              penaltyWinner: pred.penaltyWinner ?? null,
             };
           }),
         },

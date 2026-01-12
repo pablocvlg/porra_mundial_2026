@@ -402,13 +402,31 @@ export default function PorraPage() {
     const numValue = parseInt(value, 10);
     const limitedValue = Math.max(0, Math.min(20, numValue));
     
-    setPredictions(prev => ({
-      ...prev,
-      [matchId]: {
+    setPredictions(prev => {
+      const newPrediction = {
         ...prev[matchId],
         [field]: limitedValue,
-      },
-    }));
+      };
+
+      // Calcular si es empate con los nuevos valores
+      const homeGoals = field === "homeGoals" ? limitedValue : (typeof newPrediction.homeGoals === "number" ? newPrediction.homeGoals : 0);
+      const awayGoals = field === "awayGoals" ? limitedValue : (typeof newPrediction.awayGoals === "number" ? newPrediction.awayGoals : 0);
+      const isNowDraw = homeGoals === awayGoals;
+
+      // Si ya no es empate, limpiar el ganador de penaltis
+      if (!isNowDraw && penaltyWinners[matchId]) {
+        setPenaltyWinners(prevPenalties => {
+          const newPenalties = { ...prevPenalties };
+          delete newPenalties[matchId];
+          return newPenalties;
+        });
+      }
+
+      return {
+        ...prev,
+        [matchId]: newPrediction,
+      };
+    });
   };
 
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
@@ -448,6 +466,7 @@ export default function PorraPage() {
       initialPredictions[match.id] = { homeGoals: 0, awayGoals: 0 };
     });
     setPredictions(initialPredictions);
+    setPenaltyWinners({});
   };
 
   const closeModal = () => {
@@ -473,6 +492,18 @@ export default function PorraPage() {
         setShowModal(true);
         return;
       }
+      if (match.phase !== "Group") {
+        const pred = predictions[match.id];
+        const homeGoals = typeof pred.homeGoals === "number" ? pred.homeGoals : 0;
+        const awayGoals = typeof pred.awayGoals === "number" ? pred.awayGoals : 0;
+        
+        if (homeGoals === awayGoals && !penaltyWinners[match.id]) {
+          setModalMessage("Debes seleccionar el ganador en penaltis para todos los empates en eliminatorias");
+          setModalType("error");
+          setShowModal(true);
+          return;
+        }
+      }
     }
 
     try {
@@ -484,24 +515,33 @@ export default function PorraPage() {
           porraName,
           pichichi,
           predictions: matches.map(match => {
-            const basePredicton = {
+            const pred = predictions[match.id];
+            const homeGoals = typeof pred.homeGoals === "number" ? pred.homeGoals : 0;
+            const awayGoals = typeof pred.awayGoals === "number" ? pred.awayGoals : 0;
+            const isKnockout = match.phase !== "Group";
+            const isDraw = homeGoals === awayGoals;
+            const penaltyWinner = penaltyWinners[match.id];
+
+            const basePrediction: any = {
               matchId: match.id,
-              homeGoals: typeof predictions[match.id].homeGoals === "number" ? predictions[match.id].homeGoals : 0,
-              awayGoals: typeof predictions[match.id].awayGoals === "number" ? predictions[match.id].awayGoals : 0,
+              homeGoals: (isKnockout && isDraw && penaltyWinner) ? 0 : homeGoals,
+              awayGoals: (isKnockout && isDraw && penaltyWinner) ? 0 : awayGoals,
             };
+
+            // Añadir penaltyWinner explícitamente si existe
+            if (isKnockout && penaltyWinner) {
+              basePrediction.penaltyWinner = penaltyWinner;
+            }
 
             // Solo añadir homeTeam y awayTeam para partidos de knockout
             if (match.phase !== "Group") {
               const resolvedMatch = groupedMatches.knockout.find(m => m.id === match.id);
               if (resolvedMatch) {
-                return {
-                  ...basePredicton,
-                  homeTeam: resolvedMatch.homeTeam,
-                  awayTeam: resolvedMatch.awayTeam,
-                };
+                basePrediction.homeTeam = resolvedMatch.homeTeam;
+                basePrediction.awayTeam = resolvedMatch.awayTeam;
               }
             }
-            return basePredicton;
+            return basePrediction;
           }),
         }),
       });
