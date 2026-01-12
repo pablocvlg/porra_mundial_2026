@@ -300,18 +300,18 @@ export default function PorraPage() {
       const winnerMatch = placeholder.match(winnerPattern);
       
       if (winnerMatch) {
-        const matchId = parseInt(winnerMatch[1]);
+        const refMatchId = parseInt(winnerMatch[1]);
         const isLoser = placeholder.toLowerCase().includes('perdedor');
         
-        const pred = predictions[matchId];
+        const pred = predictions[refMatchId];
         if (!pred || pred.homeGoals === "" || pred.awayGoals === "") {
           return placeholder;
         }
 
         const homeGoals = typeof pred.homeGoals === "number" ? pred.homeGoals : 0;
         const awayGoals = typeof pred.awayGoals === "number" ? pred.awayGoals : 0;
-        const match = matches.find(m => m.id === matchId);
-        
+        const match = knockout.find(m => m.id === refMatchId);
+  
         if (!match) return placeholder;
 
         let winner: string | null = null;
@@ -324,7 +324,7 @@ export default function PorraPage() {
           winner = match.awayTeam;
           loser = match.homeTeam;
         } else {
-          const penaltyWinner = penaltyWinners[matchId];
+          const penaltyWinner = penaltyWinners[refMatchId];
           if (penaltyWinner === "home") {
             winner = match.homeTeam;
             loser = match.awayTeam;
@@ -638,40 +638,58 @@ export default function PorraPage() {
       <div className="w-full min-h-screen bg-black bg-center bg-no-repeat bg-fixed text-white pt-16"
       style={{ backgroundImage: `url('/background.avif')` }}>
         <div className="max-w-8xl mx-auto p-6">
-          <h1 className="text-3xl font-bold mb-6">Formulario de Porra Mundial 2026</h1>
-          <div className="bg-gray-900/50 backdrop-blur-md border border-gray-800/50 rounded-lg p-6 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block font-semibold mb-2">Nombre del participante:</label>
-                <input
-                  type="text"
-                  maxLength={35}
-                  className="border border-gray-700 bg-gray-800 text-white p-2 w-full rounded focus:outline-none focus:border-blue-500"
-                  placeholder=""
-                  value={participantName}
-                  onChange={e => handleNameChange('participantName', e.target.value)}
-                />
+          <h1 className="text-3xl font-bold mb-6">Porra para el Mundial 2026</h1>
+          <div className="max-w-7xl mx-auto">
+            <div className="bg-gray-900/50 backdrop-blur-md border border-gray-800/50 rounded-lg p-6 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-15 ml-15">
+                <div>
+                  <label className="block font-semibold mb-2">Nombre del participante:</label>
+                  <input
+                    type="text"
+                    maxLength={35}
+                    className="border border-gray-700 bg-gray-800 text-white p-2 w-4/5 rounded focus:outline-none focus:border-blue-500"
+                    placeholder=""
+                    value={participantName}
+                    onChange={e => handleNameChange('participantName', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold mb-2">Nombre de la porra:</label>
+                  <input
+                    type="text"
+                    maxLength={35}
+                    className="border border-gray-700 bg-gray-800 text-white p-2 w-4/5 rounded focus:outline-none focus:border-blue-500"
+                    placeholder=""
+                    value={porraName}
+                    onChange={e => handleNameChange('porraName', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold mb-2">Pichichi:*</label>
+                  <input
+                    type="text"
+                    className="border border-gray-700 bg-gray-800 text-white p-2 w-4/5 rounded focus:outline-none focus:border-blue-500"
+                    placeholder=""
+                    value={pichichi}
+                    onChange={e => setPichichi(e.target.value)}
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block font-semibold mb-2">Nombre de la porra:</label>
-                <input
-                  type="text"
-                  maxLength={35}
-                  className="border border-gray-700 bg-gray-800 text-white p-2 w-full rounded focus:outline-none focus:border-blue-500"
-                  placeholder=""
-                  value={porraName}
-                  onChange={e => handleNameChange('porraName', e.target.value)}
-                />
+              <div className="ml-15 mt-3 flex justify-center">
+                <p className="font-bold text-sm text-center">
+                  *Asegúrate de escribir el nombre y apellido con mayúsculas, tildes u otros carácteres.
+                  <br />
+                  Ejemplo: Kylian Mbappé | Christian Nørgaard
+                </p>
               </div>
-              <div>
-                <label className="block font-semibold mb-2">Pichichi:</label>
-                <input
-                  type="text"
-                  className="border border-gray-700 bg-gray-800 text-white p-2 w-full rounded focus:outline-none focus:border-blue-500"
-                  placeholder=""
-                  value={pichichi}
-                  onChange={e => setPichichi(e.target.value)}
-                />
+              <div className="mt-5 flex justify-center">
+                <button
+                  className="bg-orange-500 text-white px-8 py-3 rounded-full hover:bg-orange-600 font-bold text-lg transition-colors duration-200 flex items-center gap-3"
+                  onClick={handleSubmit}
+                >
+                  ENVIAR PORRA
+                  <span className="text-xl">→</span>
+                </button>
               </div>
             </div>
           </div>
@@ -715,7 +733,7 @@ export default function PorraPage() {
                   <div className="space-y-2">
                     {groupMatches.map(match => (
                       <div key={match.id} className="flex items-center justify-between bg-gray-800 p-3 rounded">
-                        <span className="w-2/5 text-right text-sm">{match.homeTeam}</span>
+                        <span className="w-2/5 text-right text-sm pr-3">{match.homeTeam}</span>
                         <div className="flex items-center space-x-2">
                           <input
                             type="text"
@@ -737,7 +755,7 @@ export default function PorraPage() {
                             onChange={e => handlePredictionChange(match.id, "awayGoals", e.target.value)}
                           />
                         </div>
-                        <span className="w-2/5 text-sm">{match.awayTeam}</span>
+                        <span className="w-2/5 text-sm pl-3">{match.awayTeam}</span>
                       </div>
                     ))}
                   </div>
@@ -863,13 +881,6 @@ export default function PorraPage() {
               </div>
             </>
           )}
-
-          <button
-            className="bg-blue-600 text-white px-8 py-3 rounded hover:bg-blue-700 font-semibold text-lg"
-            onClick={handleSubmit}
-          >
-            Enviar Porra
-          </button>
         </div>
       </div>
 
