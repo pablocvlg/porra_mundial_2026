@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import bestThirdsCombinations from '../../../public/bestThirdsCombinations.json';
 
 type Match = {
   id: number;
@@ -27,6 +28,31 @@ type TeamStats = {
 type PredictionValue = number | "";
 
 type PenaltyWinner = "home" | "away" | null;
+
+// Función para ordenar los mejores terceros según enfrentamientos
+function orderBestThirdsByJSON(bestThirds: (TeamStats & { group: string })[]) {
+  // 1. Extraer las letras de los grupos y ordenarlas alfabéticamente
+  const groupLetters = bestThirds
+    .map(team => team.group)
+    .sort()
+    .join('');
+  
+  // 2. Buscar la combinación en el JSON
+  const orderFromJSON = bestThirdsCombinations[groupLetters as keyof typeof bestThirdsCombinations];
+  
+  // 3. Si no existe la combinación, devolver el array original
+  if (!orderFromJSON) {
+    console.warn(`No se encontró la combinación "${groupLetters}" en el JSON`);
+    return bestThirds;
+  }
+  
+  // 4. Ordenar bestThirds según el orden especificado en el JSON
+  const orderedBestThirds = orderFromJSON.map(groupLetter => {
+    return bestThirds.find(team => team.group === groupLetter);
+  }).filter(Boolean) as (TeamStats & { group: string })[];
+  
+  return orderedBestThirds;
+}
 
 export default function PorraPage() {
   const [matches, setMatches] = useState<Match[]>([]);
@@ -210,7 +236,7 @@ export default function PorraPage() {
     // Calcular mejores terceros (top 8)
     const thirdPlaceTeams = Object.keys(groupStandings).map(groupKey => {
       const standings = groupStandings[groupKey];
-      const thirdPlace = standings[2]; // Índice 2 = 3º puesto
+      const thirdPlace = standings[2];
       
       return thirdPlace ? {
         ...thirdPlace,
@@ -227,9 +253,10 @@ export default function PorraPage() {
 
     // Tomar solo los 8 mejores terceros
     const bestThirds = sortedThirdPlace.slice(0, 8);
+    const orderedThirds = orderBestThirdsByJSON(bestThirds);
 
     // Función para resolver nombres de equipos
-    const resolveTeamName = (placeholder: string): string => {
+    const resolveTeamName = (placeholder: string, matchId: number): string => {
       // Patrón: "1º Grupo A", "2º Grupo B"
       const singleGroupPattern = /^([1-2])º Grupo ([A-L])$/i;
       const singleMatch = placeholder.match(singleGroupPattern);
@@ -244,28 +271,28 @@ export default function PorraPage() {
         }
       }
 
-      // Patrón: "3º Grupo A/B/C/D" (mejores terceros de grupos específicos)
-      const thirdPlacePattern = /^3º Grupo ([A-L](?:\/[A-L])+)$/i;
-      const thirdMatch = placeholder.match(thirdPlacePattern);
-      
-      if (thirdMatch) {
-        const allowedGroups = thirdMatch[1].toUpperCase().split('/');
-        
-        // Filtrar solo los mejores 8 terceros de los grupos permitidos
-        const eligibleThirds = bestThirds.filter(team => 
-          allowedGroups.includes(team.group)
-        );
-        
-        // Asignar el primer tercero disponible que no haya sido usado
-        for (const third of eligibleThirds) {
-          const teamKey = `${third.team}_${third.group}`;
-          if (!usedThirds.has(teamKey)) {
-            usedThirds.add(teamKey);
-            return third.team;
+      // Patrón para terceros: "3º Grupo A/B/C/D" o similar
+      const thirdPlacePattern = /^3º Grupo [A-L\/]+$/i;
+      if (placeholder.match(thirdPlacePattern)) {
+        // Mapeo de los mejores terceros por ID de partido
+        const thirdPlaceMapping: Record<number, number> = {
+          73: 3,
+          74: 5,
+          79: 2,
+          80: 4,
+          83: 0,
+          84: 7,
+          87: 1,
+          88: 6
+        };
+
+        // Si este partido tiene un tercer asignado, devolverlo
+        if (thirdPlaceMapping[matchId] !== undefined) {
+          const thirdIndex = thirdPlaceMapping[matchId];
+          if (orderedThirds[thirdIndex]) {
+            return orderedThirds[thirdIndex].team;
           }
         }
-        
-        return placeholder;
       }
 
       // Patrón: "Ganador Partido X"
@@ -341,8 +368,8 @@ export default function PorraPage() {
         const originalHome = knockout[i].homeTeam;
         const originalAway = knockout[i].awayTeam;
 
-        const newHome = resolveTeamName(knockout[i].homeTeam);
-        const newAway = resolveTeamName(knockout[i].awayTeam);
+        const newHome = resolveTeamName(knockout[i].homeTeam, knockout[i].id);
+        const newAway = resolveTeamName(knockout[i].awayTeam, knockout[i].id);
 
         if (newHome !== originalHome || newAway !== originalAway) {
           hasChanges = true;

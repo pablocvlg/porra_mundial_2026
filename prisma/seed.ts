@@ -116,7 +116,7 @@ async function main() {
   // 3️⃣ Seed de knockout (continuando con 73 → 96)
   const knockoutMatches = [
     { homeTeam: "1º Grupo E", awayTeam: "3º Grupo A/B/C/D/F", phase: "Round of 32", matchOrder: 73 },
-    { homeTeam: "1º Grupo L", awayTeam: "3º Grupo C/D/F/G/H", phase: "Round of 32", matchOrder: 74 },
+    { homeTeam: "1º Grupo I", awayTeam: "3º Grupo C/D/F/G/H", phase: "Round of 32", matchOrder: 74 },
     { homeTeam: "2º Grupo A", awayTeam: "2º Grupo B", phase: "Round of 32", matchOrder: 75 },
     { homeTeam: "1º Grupo F", awayTeam: "2º Grupo C", phase: "Round of 32", matchOrder: 76 },
     { homeTeam: "2º Grupo K", awayTeam: "2º Grupo L", phase: "Round of 32", matchOrder: 77 },
