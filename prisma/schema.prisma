@@ -29,6 +29,7 @@ model Entry {
   predictions     Prediction[]
   pichichi        String?
   createdAt       DateTime     @default(now())
+  totalPoints     Int
   
   @@unique([participantName, porraId]) // <-- Solo una entrada por participante por porra
 }
@@ -50,13 +51,15 @@ model Prediction {
 }
 
 model Match {
-  id          Int      @id @default(autoincrement())
-  matchOrder  Int
-  phase       String   // "Group", "Round of 16", "Quarterfinals", etc.
-  group       String?  // "A", "B", ...
-  homeTeam    String
-  awayTeam    String
-  homeGoals   Int?     // Resultado real que actualizaré manualmente
-  awayGoals   Int?
-  predictions Prediction[]
+  id            Int      @id @default(autoincrement())
+  matchOrder    Int
+  phase         String   // "Group", "Round of 16", "Quarterfinals", etc.
+  group         String?  // "A", "B", ...
+  homeTeam      String
+  awayTeam      String
+  homeGoals     Int?     // Resultado real que actualizaré manualmente
+  awayGoals     Int?
+  penaltyWinner String?  // "home" o "away" si hubo penaltis
+  isFinished    Boolean  @default(false) // Para saber si ya hay resultado
+  predictions   Prediction[]
 }

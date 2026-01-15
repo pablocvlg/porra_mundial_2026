@@ -1,3 +1,5 @@
+// BACKEND PARA OBTENER EL CALENDARIO DE PARTIDOS
+
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 
@@ -12,6 +14,8 @@ export async function GET() {
       homeGoals: number | null; 
       awayGoals: number | null;
       matchOrder: number;
+      isFinished: boolean;
+      penaltyWinner: string | null;
     }[]>`
       SELECT * FROM "Match"
       ORDER BY "matchOrder" ASC

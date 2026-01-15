@@ -6,7 +6,6 @@ export default function HomePage() {
       className="w-full min-h-screen bg-black bg-no-repeat bg-center"
       style={{ backgroundImage: `url('/background.avif')` }}
     >
-      {/* Contenido de la página */}
     </div>
   );
 }

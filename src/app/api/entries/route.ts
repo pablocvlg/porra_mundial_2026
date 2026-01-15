@@ -1,3 +1,5 @@
+// BACKEND PARA ENVIAR UNA PORRA
+
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 
@@ -104,27 +106,28 @@ export async function POST(request: NextRequest) {
 
     // Crear entry y predicciones
     const entry = await prisma.entry.create({
-      data: {
-        participantName,
-        porraId: porra.id,
-        pichichi,
-        predictions: {
-          create: predictions.map((pred: PredictionInput) => {
-            return {
-              matchId: pred.matchId,
-              homeGoals: pred.homeGoals,
-              awayGoals: pred.awayGoals,
-              homeTeam: pred.homeTeam ?? null,
-              awayTeam: pred.awayTeam ?? null,
-              penaltyWinner: pred.penaltyWinner ?? null,
-            };
-          }),
-        },
+    data: {
+      participantName,
+      porraId: porra.id,
+      pichichi,
+      totalPoints: 0,  // 👈 AGREGAR ESTA LÍNEA
+      predictions: {
+        create: predictions.map((pred: PredictionInput) => {
+          return {
+            matchId: pred.matchId,
+            homeGoals: pred.homeGoals,
+            awayGoals: pred.awayGoals,
+            homeTeam: pred.homeTeam ?? null,
+            awayTeam: pred.awayTeam ?? null,
+            penaltyWinner: pred.penaltyWinner ?? null,
+          };
+        }),
       },
-      include: {
-        predictions: true,
-      },
-    });
+    },
+    include: {
+      predictions: true,
+    },
+  });
 
     return NextResponse.json(
       {
