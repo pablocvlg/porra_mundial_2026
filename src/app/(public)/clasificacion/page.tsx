@@ -391,6 +391,26 @@ export default function PorraStatusPage() {
                             <tr className="bg-gray-800/50">
                               <td colSpan={3} className="p-4">
                                 <div className="space-y-3 text-sm">
+                                  {/* Sección EQUIPOS */}
+                                  <div>
+                                    <h4 className="font-semibold text-gray-400 mb-2 text-xs uppercase tracking-wide">
+                                      Grupos
+                                    </h4>
+                                    <div className="space-y-2">
+                                      <div className="flex justify-between items-center p-2 bg-gray-700/50 rounded">
+                                        <span className="text-gray-300">Clasificados + posición:</span>
+                                        <span className="font-semibold text-purple-400 text-base pr-5">
+                                          <span className="text-purple-300 text-sm">(+{stats.qualifiedWithPosition * 8}pt.)</span> {stats.qualifiedWithPosition}
+                                        </span>
+                                      </div>
+                                      <div className="flex justify-between items-center p-2 bg-gray-700/50 rounded">
+                                        <span className="text-gray-300">Solo clasificados:</span>
+                                        <span className="font-semibold text-indigo-400 text-base pr-5">
+                                          <span className="text-indigo-300 text-sm">(+{stats.qualifiedTeams * 5}pt.)</span> {stats.qualifiedTeams}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
                                   {/* Sección PARTIDOS */}
                                   <div>
                                     <h4 className="font-semibold text-gray-400 mb-2 text-xs uppercase tracking-wide">
@@ -411,26 +431,11 @@ export default function PorraStatusPage() {
                                       </div>
                                     </div>
                                   </div>
-
                                   {/* Sección EQUIPOS */}
                                   <div>
                                     <h4 className="font-semibold text-gray-400 mb-2 text-xs uppercase tracking-wide">
-                                      Equipos
+                                      Brackets
                                     </h4>
-                                    <div className="space-y-2">
-                                      <div className="flex justify-between items-center p-2 bg-gray-700/50 rounded">
-                                        <span className="text-gray-300">Clasificados + posición:</span>
-                                        <span className="font-semibold text-purple-400 text-base pr-5">
-                                          <span className="text-purple-300 text-sm">(+{stats.qualifiedWithPosition * 8}pt.)</span> {stats.qualifiedWithPosition}
-                                        </span>
-                                      </div>
-                                      <div className="flex justify-between items-center p-2 bg-gray-700/50 rounded">
-                                        <span className="text-gray-300">Solo clasificados:</span>
-                                        <span className="font-semibold text-indigo-400 text-base pr-5">
-                                          <span className="text-indigo-300 text-sm">(+{stats.qualifiedTeams * 5}pt.)</span> {stats.qualifiedTeams}
-                                        </span>
-                                      </div>
-                                    </div>
                                   </div>
 
                                   {/* Botón */}
