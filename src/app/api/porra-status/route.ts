@@ -1,7 +1,6 @@
 // BACKEND PARA OBTENER TODA LA INFORMACIÓN DE UNA PORRA (GRUPO)
-
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "../../../../../lib/prisma";
+import { prisma } from "../../../../lib/prisma";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -26,7 +25,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Obtener todas las entries de esa porra con sus predicciones
+  // Obtener todas las entries de esa porra con sus predicciones y ordenar por puntos
   const allEntries = await prisma.entry.findMany({
     where: { porraId: porra.id },
     include: {
@@ -36,7 +35,10 @@ export async function GET(request: NextRequest) {
         },
       },
     },
-    orderBy: { participantName: 'asc' },
+    orderBy: [
+      { totalPoints: 'desc' },  // Primero por puntos (mayor a menor)
+      { participantName: 'asc' } // Luego por nombre alfabético
+    ],
   });
 
   return NextResponse.json({
