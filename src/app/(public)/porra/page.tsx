@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import bestThirdsCombinations from '../../../public/bestThirdsCombinations.json';
+import bestThirdsCombinations from '../../../../public/bestThirdsCombinations.json';
 
 type Match = {
   id: number;
