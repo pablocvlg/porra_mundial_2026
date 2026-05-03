@@ -579,7 +579,7 @@ export default function PorraPage() {
               }`}
               title="Local gana en penaltis"
             >
-              {penaltyWinners[match.id] === "home" ? "👑" : ""}
+              {penaltyWinners[match.id] === "home" ? "(P)" : ""}
             </button>
             <button
               type="button"
@@ -591,7 +591,7 @@ export default function PorraPage() {
               }`}
               title="Visitante gana en penaltis"
             >
-              {penaltyWinners[match.id] === "away" ? "👑" : ""}
+              {penaltyWinners[match.id] === "away" ? "(P)" : ""}
             </button>
           </div>
         )}
@@ -642,7 +642,7 @@ export default function PorraPage() {
                 </div>
               </div>
               <div className="mt-2 flex justify-center">
-                <p className="font-bold text-xs text-center text-gray-300">
+                <p className="font-bold text-xs text-center text-white-300">
                   *Asegúrate de escribir el nombre y apellido con mayúsculas, tildes u otros carácteres.
                   <br />
                   Ejemplo: Kylian Mbappé | Christian Nørgaard

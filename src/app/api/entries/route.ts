@@ -67,21 +67,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Comprobar que no hay placeholders sin resolver en knockout
+    // Comprobar que no hay placeholders sin resolver en eliminatorias
     const invalidPredictions = predictions.filter((pred: PredictionInput) => {
-      // Solo validar si tiene homeTeam y awayTeam (partidos knockout)
+      // Solo validar si tiene homeTeam y awayTeam (partidos eliminatorias)
       if (pred.homeTeam || pred.awayTeam) {
         const ganadorPattern = /^(?:Ganador|Perdedor)(?: del| de)? Partido \d+$/i;
-        // const grupoPattern = /^\d+º Grupo [A-L](?:\/[A-L])*$/i;
         
         const homeIsPlaceholder = pred.homeTeam && (
-          ganadorPattern.test(pred.homeTeam)// || 
-          // grupoPattern.test(pred.homeTeam)
+          ganadorPattern.test(pred.homeTeam)
         );
         
         const awayIsPlaceholder = pred.awayTeam && (
-          ganadorPattern.test(pred.awayTeam)// || 
-          //grupoPattern.test(pred.awayTeam)
+          ganadorPattern.test(pred.awayTeam)
         );
         
         return homeIsPlaceholder || awayIsPlaceholder;
@@ -110,7 +107,7 @@ export async function POST(request: NextRequest) {
       participantName,
       porraId: porra.id,
       pichichi,
-      totalPoints: 0,  // 👈 AGREGAR ESTA LÍNEA
+      totalPoints: 0,
       predictions: {
         create: predictions.map((pred: PredictionInput) => {
           return {
