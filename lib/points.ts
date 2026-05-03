@@ -1,5 +1,5 @@
 import { prisma } from './prisma';
-import { Match, Prediction } from '@prisma/client';
+import { Match, Prediction } from '../generated/prisma/client';
 
 // Definir las nuevas reglas de puntuación
 const POINTS_RULES = {
