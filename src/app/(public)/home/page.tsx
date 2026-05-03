@@ -27,7 +27,6 @@ type TeamStats = {
   points: number;
 };
 
-// Función para ordenar los mejores terceros según enfrentamientos
 function orderBestThirdsByJSON(bestThirds: (TeamStats & { group: string })[]) {
   const groupLetters = bestThirds
     .map(team => team.group)
@@ -65,7 +64,6 @@ export default function ResultsPage() {
       });
   }, []);
 
-  // Calcular todas las clasificaciones de grupos y resolver brackets
   const groupedMatches = useMemo(() => {
     const groups: Record<string, Match[]> = {};
     const groupStandings: Record<string, TeamStats[]> = {};
@@ -91,7 +89,6 @@ export default function ResultsPage() {
           }
         });
 
-        // Solo contar partidos finalizados
         if (!match.isFinished || match.homeGoals === null || match.awayGoals === null || match.homeGoals === undefined || match.awayGoals === undefined) return;
 
         const homeGoals = match.homeGoals;
@@ -284,7 +281,6 @@ export default function ResultsPage() {
           winner = match.awayTeam;
           loser = match.homeTeam;
         } else {
-          // Empate - usar penaltyWinner
           if (match.penaltyWinner) {
             if (match.penaltyWinner === "home") {
               winner = match.homeTeam;
@@ -352,33 +348,33 @@ export default function ResultsPage() {
       <div key={match.id} className={`border rounded ${
         isFinished ? 'bg-blue-900 bg-opacity-20 border-blue-700' : 'bg-gray-800 border-gray-700'
       }`}>
-        <div className="flex items-center justify-between p-2 border-b border-gray-700">
-          <span className="text-sm flex-1">{match.homeTeam}</span>
+        <div className="flex items-center justify-between p-1 border-b border-gray-700">
+          <span className="text-xs flex-1">{match.homeTeam}</span>
           <div className="flex items-center">
             {isFinished && homeGoals !== null ? (
               <>
                 {hasPenalties && match.penaltyWinner === "home" && (
-                  <span className="text-yellow-400 text-xs font-bold">👑</span>
+                  <span className="text-yellow-400 text-xs font-bold">(P)</span>
                 )}
-                <span className="font-bold text-lg w-8 text-center">{homeGoals}</span>
+                <span className="font-bold text-sm w-6 text-center">{homeGoals}</span>
               </>
             ) : (
-              <span className="text-gray-500 text-sm">-</span>
+              <span className="text-gray-500 text-xs">-</span>
             )}
           </div>
         </div>
-        <div className="flex items-center justify-between p-2">
-          <span className="text-sm flex-1">{match.awayTeam}</span>
+        <div className="flex items-center justify-between p-1">
+          <span className="text-xs flex-1">{match.awayTeam}</span>
           <div className="flex items-center">
             {isFinished && awayGoals !== null ? (
               <>
                 {hasPenalties && match.penaltyWinner === "away" && (
-                  <span className="text-yellow-400 text-xs font-bold">👑</span>
+                  <span className="text-yellow-400 text-xs font-bold">(P)</span>
                 )}
-                <span className="font-bold text-lg w-8 text-center">{awayGoals}</span>
+                <span className="font-bold text-sm w-6 text-center">{awayGoals}</span>
               </>
             ) : (
-              <span className="text-gray-500 text-sm">-</span>
+              <span className="text-gray-500 text-xs">-</span>
             )}
           </div>
         </div>
@@ -389,76 +385,75 @@ export default function ResultsPage() {
   if (loading) {
     return (
       <div className="w-full min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white text-2xl">Cargando resultados...</div>
+        <div className="text-white text-xl">Cargando resultados...</div>
       </div>
     );
   }
 
   return (
-    <div className="w-full min-h-screen bg-black bg-center bg-no-repeat bg-fixed text-white pt-16"
-    style={{ backgroundImage: `url('/background.avif')` }}>
-      <div className="max-w-8xl mx-auto p-6">
-        <h1 className="text-3xl font-bold mb-6">Resultados Reales - Mundial 2026</h1>
-
-        <h2 className="text-2xl font-bold mb-4">Fase de Grupos</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+    <div className="w-full min-h-screen bg-black bg-center bg-no-repeat bg-fixed text-white pt-10"
+      style={{ backgroundImage: `url('/background.avif')` }}>
+      <div className="max-w-8xl mx-auto p-4">
+        <h1 className="text-xl font-bold mb-3">RESULTADOS REALES</h1>
+        <h2 className="text-base font-bold mb-3">Fase de Grupos</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 mb-4">
           {Object.entries(groupedMatches.groups).sort().map(([groupLetter, groupMatches]) => {
             const standings = groupedMatches.groupStandings[groupLetter] || [];
             
             return (
-              <div key={groupLetter} className="bg-gray-900/80 border border-gray-800 rounded-lg p-5">
-                <h3 className="text-xl font-bold mb-4 text-blue-400">Grupo {groupLetter}</h3>
-                <div className="mb-4 overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-800 text-xs">
+              <div key={groupLetter} className="bg-gray-900/80 border border-gray-800 rounded-lg p-2">
+                <h3 className="text-sm font-bold mb-2 text-blue-400">Grupo {groupLetter}</h3>
+                <div className="mb-2 overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead className="bg-gray-800">
                       <tr>
-                        <th className="p-2 text-left">Pos</th>
-                        <th className="p-2 text-left">Equipo</th>
-                        <th className="p-2 text-center">PJ</th>
-                        <th className="p-2 text-center">Pts</th>
-                        <th className="p-2 text-center">GF</th>
-                        <th className="p-2 text-center">GC</th>
-                        <th className="p-2 text-center">DG</th>
+                        <th className="p-1 text-left">Pos</th>
+                        <th className="p-1 text-left">Equipo</th>
+                        <th className="p-1 text-center">PJ</th>
+                        <th className="p-1 text-center">Pts</th>
+                        <th className="p-1 text-center">GF</th>
+                        <th className="p-1 text-center">GC</th>
+                        <th className="p-1 text-center">DG</th>
                       </tr>
                     </thead>
                     <tbody>
                       {standings.map((stats, idx) => (
                         <tr key={stats.team} className={`border-b border-gray-800 ${idx < 2 ? 'bg-green-900 bg-opacity-20' : ''}`}>
-                          <td className="p-2 font-semibold">{idx + 1}</td>
-                          <td className="p-2">{stats.team}</td>
-                          <td className="p-2 text-center">{stats.played}</td>
-                          <td className="p-2 text-center font-bold">{stats.points}</td>
-                          <td className="p-2 text-center">{stats.goalsFor}</td>
-                          <td className="p-2 text-center">{stats.goalsAgainst}</td>
-                          <td className="p-2 text-center">{stats.goalDifference > 0 ? '+' : ''}{stats.goalDifference}</td>
+                          <td className="p-1 text-center font-semibold">{idx + 1}</td>
+                          <td className="p-1">{stats.team}</td>
+                          <td className="p-1 text-center">{stats.played}</td>
+                          <td className="p-1 text-center font-bold">{stats.points}</td>
+                          <td className="p-1 text-center">{stats.goalsFor}</td>
+                          <td className="p-1 text-center">{stats.goalsAgainst}</td>
+                          <td className="p-1 text-center">{stats.goalDifference > 0 ? '+' : ''}{stats.goalDifference}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-1">
                   {groupMatches.map(match => {
                     const isFinished = match.isFinished ?? false;
                     const homeGoals = match.homeGoals !== undefined && match.homeGoals !== null ? match.homeGoals : null;
                     const awayGoals = match.awayGoals !== undefined && match.awayGoals !== null ? match.awayGoals : null;
                     
                     return (
-                      <div key={match.id} className={`flex items-center justify-between p-3 rounded ${
+                      <div key={match.id} className={`flex items-center justify-between p-1 rounded ${
                         isFinished ? 'bg-blue-900' : 'bg-gray-800'
                       }`}>
-                        <span className="w-2/5 text-right text-sm pr-3">{match.homeTeam}</span>
-                        <div className="flex items-center space-x-2">
+                        <span className="w-2/5 text-right text-xs pr-1">{match.homeTeam}</span>
+                        <div className="flex items-center space-x-1">
                           {isFinished && homeGoals !== null && awayGoals !== null ? (
                             <>
-                              <span className="font-bold text-lg w-8 text-center">{homeGoals}</span>
-                              <span className="text-gray-500">-</span>
-                              <span className="font-bold text-lg w-8 text-center">{awayGoals}</span>
+                              <span className="font-bold text-sm w-5 text-center">{homeGoals}</span>
+                              <span className="text-gray-500 text-xs">-</span>
+                              <span className="font-bold text-sm w-5 text-center">{awayGoals}</span>
                             </>
                           ) : (
-                            <span className="text-gray-500 text-sm">vs</span>
+                            <span className="text-gray-500 text-xs">vs</span>
                           )}
                         </div>
-                        <span className="w-2/5 text-sm pl-3">{match.awayTeam}</span>
+                        <span className="w-2/5 text-xs pl-1">{match.awayTeam}</span>
                       </div>
                     );
                   })}
@@ -470,12 +465,12 @@ export default function ResultsPage() {
 
         {groupedMatches.knockout.length > 0 && (
           <>
-            <h2 className="text-2xl font-bold mb-4">Eliminatorias</h2>
-            <div className="bg-gray-900/90 border border-gray-800 rounded-lg p-8 mb-6 overflow-x-auto">
-              <div className="flex justify-between gap-4 min-w-[1400px] h-[1200px]">
+            <h2 className="text-base font-bold mb-2">Eliminatorias</h2>
+            <div className="bg-gray-900/90 border border-gray-800 rounded-lg pt-3 pb-3 pl-2 pr-2 mb-4 overflow-x-auto">
+              <div className="flex justify-between gap-2 min-w-[1100px] h-[700px]">
                 {/* Round of 32 - Izquierda */}
-                <div className="flex flex-col justify-around w-48">
-                  <div className="text-center text-sm font-semibold text-blue-400 mb-2">Round of 32</div>
+                <div className="flex flex-col justify-around w-36">
+                  <div className="text-center text-xs font-semibold text-blue-400 mb-1">Round of 32</div>
                   <div className="flex flex-col justify-around flex-1">
                     {groupedMatches.knockout
                       .filter(m => m.phase === "Round of 32")
@@ -485,8 +480,8 @@ export default function ResultsPage() {
                 </div>
 
                 {/* Round of 16 - Izquierda */}
-                <div className="flex flex-col justify-around w-48">
-                  <div className="text-center text-sm font-semibold text-blue-400 mb-2">Round of 16</div>
+                <div className="flex flex-col justify-around w-36">
+                  <div className="text-center text-xs font-semibold text-blue-400 mb-1">Round of 16</div>
                   <div className="flex flex-col justify-around flex-1">
                     {groupedMatches.knockout
                       .filter(m => m.phase === "Round of 16")
@@ -496,8 +491,8 @@ export default function ResultsPage() {
                 </div>
 
                 {/* Quarter-final - Izquierda */}
-                <div className="flex flex-col justify-around w-48">
-                  <div className="text-center text-sm font-semibold text-blue-400 mb-2">Quarter-final</div>
+                <div className="flex flex-col justify-around w-36">
+                  <div className="text-center text-xs font-semibold text-blue-400 mb-1">Quarter-final</div>
                   <div className="flex flex-col justify-around flex-1">
                     {groupedMatches.knockout
                       .filter(m => m.phase === "Quarterfinal" || m.phase === "Quarter-final")
@@ -507,8 +502,8 @@ export default function ResultsPage() {
                 </div>
 
                 {/* Semi-final - Izquierda */}
-                <div className="flex flex-col justify-around w-48">
-                  <div className="text-center text-sm font-semibold text-blue-400 mb-2">Semi-final</div>
+                <div className="flex flex-col justify-around w-36">
+                  <div className="text-center text-xs font-semibold text-blue-400 mb-1">Semi-final</div>
                   <div className="flex flex-col justify-around flex-1">
                     {groupedMatches.knockout
                       .filter(m => m.phase === "Semifinal" || m.phase === "Semi-final")
@@ -518,29 +513,41 @@ export default function ResultsPage() {
                 </div>
 
                 {/* Final y Tercer Puesto */}
-                <div className="flex flex-col justify-center w-56 gap-4">
-                  <div className="text-center text-sm font-semibold text-blue-400 mb-2">Final</div>
+                <div className="flex flex-col justify-center w-44">
+                  <div className="text-center text-base font-bold text-yellow-400 mb-2">FINAL</div>
                   {groupedMatches.knockout
+                    .filter(m => m.phase === "Final" && m.isFinished && m.homeGoals !== null && m.awayGoals !== null)
+                    .map(match => {
+                      const winner = match.penaltyWinner === "home" ? match.homeTeam
+                        : match.penaltyWinner === "away" ? match.awayTeam
+                        : (match.homeGoals ?? 0) > (match.awayGoals ?? 0) ? match.homeTeam
+                        : match.awayTeam;
+                      return (
+                        <div key="winner" className="text-center py-1 text-yellow-400 font-bold text-xs mb-3">
+                          🏆 Ganador: {winner}
+                        </div>
+                      );
+                    })}
+                    {groupedMatches.knockout
                     .filter(m => m.phase === "Final")
                     .map(match => (
                       <div key={match.id} className="border-2 border-yellow-500 rounded shadow-lg shadow-yellow-500/20">
                         {renderMatch(match)}
                       </div>
                     ))}
-                  
                   {groupedMatches.knockout
                     .filter(m => m.phase === "Third Place")
                     .map(match => (
-                      <div key={match.id} className="mt-8">
-                        <div className="text-center text-xs text-gray-400 mb-2">Play-off for third place</div>
+                      <div key={match.id}>
+                        <div className="text-center text-xs text-white-400 mt-3 mb-3">Tercer y cuarto puesto:</div>
                         {renderMatch(match)}
                       </div>
                     ))}
                 </div>
 
                 {/* Semi-final - Derecha */}
-                <div className="flex flex-col justify-around w-48">
-                  <div className="text-center text-sm font-semibold text-blue-400 mb-2">Semi-final</div>
+                <div className="flex flex-col justify-around w-36">
+                  <div className="text-center text-xs font-semibold text-blue-400 mb-1">Semi-final</div>
                   <div className="flex flex-col justify-around flex-1">
                     {groupedMatches.knockout
                       .filter(m => m.phase === "Semifinal" || m.phase === "Semi-final")
@@ -550,8 +557,8 @@ export default function ResultsPage() {
                 </div>
 
                 {/* Quarter-final - Derecha */}
-                <div className="flex flex-col justify-around w-48">
-                  <div className="text-center text-sm font-semibold text-blue-400 mb-2">Quarter-final</div>
+                <div className="flex flex-col justify-around w-36">
+                  <div className="text-center text-xs font-semibold text-blue-400 mb-1">Quarter-final</div>
                   <div className="flex flex-col justify-around flex-1">
                     {groupedMatches.knockout
                       .filter(m => m.phase === "Quarterfinal" || m.phase === "Quarter-final")
@@ -561,8 +568,8 @@ export default function ResultsPage() {
                 </div>
 
                 {/* Round of 16 - Derecha */}
-                <div className="flex flex-col justify-around w-48">
-                  <div className="text-center text-sm font-semibold text-blue-400 mb-2">Round of 16</div>
+                <div className="flex flex-col justify-around w-36">
+                  <div className="text-center text-xs font-semibold text-blue-400 mb-1">Round of 16</div>
                   <div className="flex flex-col justify-around flex-1">
                     {groupedMatches.knockout
                       .filter(m => m.phase === "Round of 16")
@@ -572,8 +579,8 @@ export default function ResultsPage() {
                 </div>
 
                 {/* Round of 32 - Derecha */}
-                <div className="flex flex-col justify-around w-48">
-                  <div className="text-center text-sm font-semibold text-blue-400 mb-2">Round of 32</div>
+                <div className="flex flex-col justify-around w-36">
+                  <div className="text-center text-xs font-semibold text-blue-400 mb-1">Round of 32</div>
                   <div className="flex flex-col justify-around flex-1">
                     {groupedMatches.knockout
                       .filter(m => m.phase === "Round of 32")

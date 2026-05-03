@@ -13,22 +13,22 @@ export default function Navbar() {
   return (
     <nav className="bg-transparent backdrop-blur-md text-white fixed w-full z-50 shadow-lg">
       <div className="max-w-7xl mx-auto px-8">
-        <div className="flex items-center justify-center h-16 space-x-12">
+        <div className="flex items-center justify-center h-12 space-x-12">
           <Link
             href="/porra"
-            className={`px-8 py-3 rounded-full transition ${isActive("/porra")}`}
+            className={`px-8 py-1.5 rounded-full transition ${isActive("/porra")}`}
           >
             Enviar porra
           </Link>
           <Link
             href="/"
-            className={`px-8 py-3 rounded-full transition ${isActive("/")}`}
+            className={`px-8 py-1.5 rounded-full transition ${isActive("/")}`}
           >
             Inicio
           </Link>
           <Link
             href="/clasificacion"
-            className={`px-8 py-3 rounded-full transition ${isActive("/clasificacion")}`}
+            className={`px-8 py-1.5 rounded-full transition ${isActive("/clasificacion")}`}
           >
             Clasificación
           </Link>
