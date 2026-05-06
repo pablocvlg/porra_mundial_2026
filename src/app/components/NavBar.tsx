@@ -24,7 +24,7 @@ export default function Navbar() {
             href="/"
             className={`px-8 py-1.5 rounded-full transition ${isActive("/")}`}
           >
-            Inicio
+           Inicio
           </Link>
           <Link
             href="/clasificacion"
