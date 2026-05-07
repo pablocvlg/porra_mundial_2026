@@ -466,7 +466,7 @@ export default function ResultsPage() {
         {groupedMatches.knockout.length > 0 && (
           <>
             <h2 className="text-base font-bold mb-2">Eliminatorias</h2>
-            <div className="bg-gray-900/90 border border-gray-800 rounded-lg pt-3 pb-3 pl-2 pr-2 mb-4 overflow-x-auto">
+            <div className="bg-gray-900/90 border border-gray-800 rounded-lg pt-3 pb-3 pl-2 pr-2 overflow-x-auto">
               <div className="flex justify-between gap-2 min-w-[1100px] h-[700px]">
                 {/* Round of 32 - Izquierda */}
                 <div className="flex flex-col justify-around w-36">
