@@ -28,7 +28,6 @@ type TeamStats = {
 };
 
 type PredictionValue = number | "";
-
 type PenaltyWinner = "home" | "away" | null;
 
 function orderBestThirdsByJSON(bestThirds: (TeamStats & { group: string })[]) {
@@ -58,6 +57,7 @@ export default function PorraPage() {
   const [pichichi, setPichichi] = useState("");
   const [predictions, setPredictions] = useState<Record<number, { homeGoals: PredictionValue; awayGoals: PredictionValue }>>({});
   const [penaltyWinners, setPenaltyWinners] = useState<Record<number, PenaltyWinner>>({});
+  const [porraOptions, setPorraOptions] = useState<string[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
   const [modalType, setModalType] = useState<"error" | "success">("error");
@@ -74,6 +74,14 @@ export default function PorraPage() {
         setPredictions(initialPredictions);
       });
   }, []);
+
+  useEffect(() => {
+  fetch("/api/porras")
+    .then(res => res.json())
+    .then((data: { name: string }[]) => {
+      setPorraOptions(data.map(p => p.name));
+    });
+}, []);
 
   const groupedMatches = useMemo(() => {
     const groups: Record<string, Match[]> = {};
@@ -415,14 +423,8 @@ export default function PorraPage() {
     }
   };
 
-  const handleNameChange = (field: 'participantName' | 'porraName', value: string) => {
-    const sanitized = value.replace(/[^\p{L}\p{N}\s]/gu, '');
-    
-    if (field === 'participantName') {
-      setParticipantName(sanitized);
-    } else {
-      setPorraName(sanitized);
-    }
+  const handleNameChange = (value: string) => {
+    setParticipantName(value.replace(/[^\p{L}\p{N}\s]/gu, ''));
   };
 
   const resetForm = () => {
@@ -616,19 +618,21 @@ export default function PorraPage() {
                     className="border border-gray-700 bg-gray-800 text-white p-2 w-4/5 rounded text-sm focus:outline-none focus:border-blue-500"
                     placeholder=""
                     value={participantName}
-                    onChange={e => handleNameChange('participantName', e.target.value)}
+                    onChange={e => handleNameChange(e.target.value)}
                   />
                 </div>
                 <div>
                   <label className="block font-semibold mb-1 text-sm">Nombre de la porra:</label>
-                  <input
-                    type="text"
-                    maxLength={35}
+                  <select
                     className="border border-gray-700 bg-gray-800 text-white p-2 w-4/5 rounded text-sm focus:outline-none focus:border-blue-500"
-                    placeholder=""
                     value={porraName}
-                    onChange={e => handleNameChange('porraName', e.target.value)}
-                  />
+                    onChange={e => setPorraName(e.target.value)}
+                  >
+                    <option value="">-- Selecciona una porra --</option>
+                    {porraOptions.map(name => (
+                      <option key={name} value={name}>{name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block font-semibold mb-1 text-sm">Pichichi:*</label>
