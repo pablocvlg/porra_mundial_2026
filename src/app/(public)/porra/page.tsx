@@ -28,7 +28,6 @@ type TeamStats = {
 };
 
 type PredictionValue = number | "";
-
 type PenaltyWinner = "home" | "away" | null;
 
 function orderBestThirdsByJSON(bestThirds: (TeamStats & { group: string })[]) {
@@ -58,6 +57,7 @@ export default function PorraPage() {
   const [pichichi, setPichichi] = useState("");
   const [predictions, setPredictions] = useState<Record<number, { homeGoals: PredictionValue; awayGoals: PredictionValue }>>({});
   const [penaltyWinners, setPenaltyWinners] = useState<Record<number, PenaltyWinner>>({});
+  const [porraOptions, setPorraOptions] = useState<string[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
   const [modalType, setModalType] = useState<"error" | "success">("error");
@@ -74,6 +74,14 @@ export default function PorraPage() {
         setPredictions(initialPredictions);
       });
   }, []);
+
+  useEffect(() => {
+  fetch("/api/porras")
+    .then(res => res.json())
+    .then((data: { name: string }[]) => {
+      setPorraOptions(data.map(p => p.name));
+    });
+}, []);
 
   const groupedMatches = useMemo(() => {
     const groups: Record<string, Match[]> = {};
@@ -353,7 +361,7 @@ export default function PorraPage() {
       }
     }
 
-    return { groups, knockout, groupStandings };
+    return { groups, knockout, groupStandings, bestThirds };
   }, [matches, predictions, penaltyWinners]);
 
   const handlePredictionChange = (matchId: number, field: "homeGoals" | "awayGoals", value: string) => {
@@ -415,14 +423,8 @@ export default function PorraPage() {
     }
   };
 
-  const handleNameChange = (field: 'participantName' | 'porraName', value: string) => {
-    const sanitized = value.replace(/[^\p{L}\p{N}\s]/gu, '');
-    
-    if (field === 'participantName') {
-      setParticipantName(sanitized);
-    } else {
-      setPorraName(sanitized);
-    }
+  const handleNameChange = (value: string) => {
+    setParticipantName(value.replace(/[^\p{L}\p{N}\s]/gu, ''));
   };
 
   const resetForm = () => {
@@ -604,41 +606,49 @@ export default function PorraPage() {
       <div className="w-full min-h-screen bg-black bg-center bg-no-repeat bg-fixed text-white pt-10"
         style={{ backgroundImage: `url('/background.avif')` }}>
         <div className="max-w-8xl mx-auto p-4">
-          <h1 className="text-xl font-bold mb-4">Porra para el Mundial 2026</h1>
+          <h1 className="text-xl font-bold mb-4">PORRA MUNDIAL 2026</h1>
           <div className="max-w-7xl mx-auto">
             <div className="bg-gray-900/50 backdrop-blur-md border border-gray-800/50 rounded-lg p-4 mb-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block font-semibold mb-1 text-sm">Nombre del participante:</label>
-                  <input
-                    type="text"
-                    maxLength={35}
-                    className="border border-gray-700 bg-gray-800 text-white p-2 w-4/5 rounded text-sm focus:outline-none focus:border-blue-500"
-                    placeholder=""
-                    value={participantName}
-                    onChange={e => handleNameChange('participantName', e.target.value)}
-                  />
+                  <div className="flex flex-col items-center">
+                    <label className="block font-semibold mb-2 text-sm w-4/5">Nombre del participante:</label>
+                    <input
+                      type="text"
+                      maxLength={35}
+                      className="border border-gray-700 bg-gray-800 text-white p-2 w-4/5 rounded text-sm focus:outline-none focus:border-blue-500"
+                      placeholder=""
+                      value={participantName}
+                      onChange={e => handleNameChange(e.target.value)}
+                    />
+                  </div>
                 </div>
                 <div>
-                  <label className="block font-semibold mb-1 text-sm">Nombre de la porra:</label>
-                  <input
-                    type="text"
-                    maxLength={35}
-                    className="border border-gray-700 bg-gray-800 text-white p-2 w-4/5 rounded text-sm focus:outline-none focus:border-blue-500"
-                    placeholder=""
-                    value={porraName}
-                    onChange={e => handleNameChange('porraName', e.target.value)}
-                  />
+                  <div className="flex flex-col items-center">
+                    <label className="block font-semibold mb-2 text-sm w-4/5">Nombre de la porra:</label>
+                    <select
+                      className="border border-gray-700 bg-gray-800 text-white p-2 w-4/5 rounded text-sm focus:outline-none focus:border-blue-500"
+                      value={porraName}
+                      onChange={e => setPorraName(e.target.value)}
+                    >
+                      <option value="">-- Selecciona una porra --</option>
+                      {porraOptions.map(name => (
+                        <option key={name} value={name}>{name}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
                 <div>
-                  <label className="block font-semibold mb-1 text-sm">Pichichi:*</label>
-                  <input
-                    type="text"
-                    className="border border-gray-700 bg-gray-800 text-white p-2 w-4/5 rounded text-sm focus:outline-none focus:border-blue-500"
-                    placeholder=""
-                    value={pichichi}
-                    onChange={e => setPichichi(e.target.value)}
-                  />
+                  <div className="flex flex-col items-center">
+                    <label className="block font-semibold mb-2 text-sm w-4/5">Pichichi:*</label>
+                    <input
+                      type="text"
+                      className="border border-gray-700 bg-gray-800 text-white p-2 w-4/5 rounded text-sm focus:outline-none focus:border-blue-500"
+                      placeholder=""
+                      value={pichichi}
+                      onChange={e => setPichichi(e.target.value)}
+                    />
+                  </div>
                 </div>
               </div>
               <div className="mt-2 flex justify-center">
@@ -659,9 +669,8 @@ export default function PorraPage() {
               </div>
             </div>
           </div>
-
           <h2 className="text-base font-bold mb-3">Fase de Grupos</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 mb-4">
             {Object.entries(groupedMatches.groups).sort().map(([groupLetter, groupMatches]) => {
               const standings = groupedMatches.groupStandings[groupLetter] || [];
               
@@ -683,7 +692,13 @@ export default function PorraPage() {
                       </thead>
                       <tbody>
                         {standings.map((stats, idx) => (
-                          <tr key={stats.team} className={`border-b border-gray-800 ${idx < 2 ? 'bg-green-900 bg-opacity-20' : ''}`}>
+                          <tr key={stats.team} className={`border-b border-gray-800 ${
+                            idx < 2
+                              ? 'bg-green-900 bg-opacity-20'
+                              : idx === 2 && groupedMatches.bestThirds.some(t => t.team === stats.team)
+                              ? 'bg-yellow-900 bg-opacity-20'
+                              : ''
+                          }`}>
                             <td className="p-1 text-center font-semibold">{idx + 1}</td>
                             <td className="p-1">{stats.team}</td>
                             <td className="p-1 text-center">{stats.played}</td>
@@ -782,19 +797,37 @@ export default function PorraPage() {
                   {/* Final y Tercer Puesto */}
                   <div className="flex flex-col justify-center w-44">
                     <div className="text-center text-base font-bold text-yellow-400 mb-2">FINAL</div>
-                    {groupedMatches.knockout
-                    .filter(m => m.phase === "Final" && m.isFinished && m.homeGoals !== null && m.awayGoals !== null)
-                    .map(match => {
-                      const winner = match.penaltyWinner === "home" ? match.homeTeam
-                        : match.penaltyWinner === "away" ? match.awayTeam
-                        : (match.homeGoals ?? 0) > (match.awayGoals ?? 0) ? match.homeTeam
-                        : match.awayTeam;
+                    {(() => {
+                      const finalMatch = groupedMatches.knockout.find(m => m.phase === "Final");
+                      if (!finalMatch) return null;
+
+                      const pred = predictions[finalMatch.id];
+                      if (!pred || pred.homeGoals === "" || pred.awayGoals === "") return null;
+
+                      const homeGoals = typeof pred.homeGoals === "number" ? pred.homeGoals : 0;
+                      const awayGoals = typeof pred.awayGoals === "number" ? pred.awayGoals : 0;
+                      const penalty = penaltyWinners[finalMatch.id];
+
+                      let winner: string | null = null;
+
+                      if (homeGoals > awayGoals) {
+                        winner = finalMatch.homeTeam;
+                      } else if (awayGoals > homeGoals) {
+                        winner = finalMatch.awayTeam;
+                      } else if (penalty === "home") {
+                        winner = finalMatch.homeTeam;
+                      } else if (penalty === "away") {
+                        winner = finalMatch.awayTeam;
+                      }
+
+                      if (!winner) return null;
+
                       return (
-                        <div key="winner" className="text-center py-1 text-yellow-400 font-bold text-xs mb-3">
+                        <div className="text-center py-1 text-yellow-400 font-bold text-xs mb-3">
                           🏆 Ganador: {winner}
                         </div>
                       );
-                    })}
+                    })()}
                     {groupedMatches.knockout
                       .filter(m => m.phase === "Final")
                       .map(match => (
