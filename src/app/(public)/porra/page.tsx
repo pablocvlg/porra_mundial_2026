@@ -797,19 +797,37 @@ export default function PorraPage() {
                   {/* Final y Tercer Puesto */}
                   <div className="flex flex-col justify-center w-44">
                     <div className="text-center text-base font-bold text-yellow-400 mb-2">FINAL</div>
-                    {groupedMatches.knockout
-                    .filter(m => m.phase === "Final" && m.isFinished && m.homeGoals !== null && m.awayGoals !== null)
-                    .map(match => {
-                      const winner = match.penaltyWinner === "home" ? match.homeTeam
-                        : match.penaltyWinner === "away" ? match.awayTeam
-                        : (match.homeGoals ?? 0) > (match.awayGoals ?? 0) ? match.homeTeam
-                        : match.awayTeam;
+                    {(() => {
+                      const finalMatch = groupedMatches.knockout.find(m => m.phase === "Final");
+                      if (!finalMatch) return null;
+
+                      const pred = predictions[finalMatch.id];
+                      if (!pred || pred.homeGoals === "" || pred.awayGoals === "") return null;
+
+                      const homeGoals = typeof pred.homeGoals === "number" ? pred.homeGoals : 0;
+                      const awayGoals = typeof pred.awayGoals === "number" ? pred.awayGoals : 0;
+                      const penalty = penaltyWinners[finalMatch.id];
+
+                      let winner: string | null = null;
+
+                      if (homeGoals > awayGoals) {
+                        winner = finalMatch.homeTeam;
+                      } else if (awayGoals > homeGoals) {
+                        winner = finalMatch.awayTeam;
+                      } else if (penalty === "home") {
+                        winner = finalMatch.homeTeam;
+                      } else if (penalty === "away") {
+                        winner = finalMatch.awayTeam;
+                      }
+
+                      if (!winner) return null;
+
                       return (
-                        <div key="winner" className="text-center py-1 text-yellow-400 font-bold text-xs mb-3">
+                        <div className="text-center py-1 text-yellow-400 font-bold text-xs mb-3">
                           🏆 Ganador: {winner}
                         </div>
                       );
-                    })}
+                    })()}
                     {groupedMatches.knockout
                       .filter(m => m.phase === "Final")
                       .map(match => (
