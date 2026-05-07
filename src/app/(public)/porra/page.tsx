@@ -611,38 +611,44 @@ export default function PorraPage() {
             <div className="bg-gray-900/50 backdrop-blur-md border border-gray-800/50 rounded-lg p-4 mb-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block font-semibold mb-1 text-sm">Nombre del participante:</label>
-                  <input
-                    type="text"
-                    maxLength={35}
-                    className="border border-gray-700 bg-gray-800 text-white p-2 w-4/5 rounded text-sm focus:outline-none focus:border-blue-500"
-                    placeholder=""
-                    value={participantName}
-                    onChange={e => handleNameChange(e.target.value)}
-                  />
+                  <div className="flex flex-col items-center">
+                    <label className="block font-semibold mb-2 text-sm w-4/5">Nombre del participante:</label>
+                    <input
+                      type="text"
+                      maxLength={35}
+                      className="border border-gray-700 bg-gray-800 text-white p-2 w-4/5 rounded text-sm focus:outline-none focus:border-blue-500"
+                      placeholder=""
+                      value={participantName}
+                      onChange={e => handleNameChange(e.target.value)}
+                    />
+                  </div>
                 </div>
                 <div>
-                  <label className="block font-semibold mb-1 text-sm">Nombre de la porra:</label>
-                  <select
-                    className="border border-gray-700 bg-gray-800 text-white p-2 w-4/5 rounded text-sm focus:outline-none focus:border-blue-500"
-                    value={porraName}
-                    onChange={e => setPorraName(e.target.value)}
-                  >
-                    <option value="">-- Selecciona una porra --</option>
-                    {porraOptions.map(name => (
-                      <option key={name} value={name}>{name}</option>
-                    ))}
-                  </select>
+                  <div className="flex flex-col items-center">
+                    <label className="block font-semibold mb-2 text-sm w-4/5">Nombre de la porra:</label>
+                    <select
+                      className="border border-gray-700 bg-gray-800 text-white p-2 w-4/5 rounded text-sm focus:outline-none focus:border-blue-500"
+                      value={porraName}
+                      onChange={e => setPorraName(e.target.value)}
+                    >
+                      <option value="">-- Selecciona una porra --</option>
+                      {porraOptions.map(name => (
+                        <option key={name} value={name}>{name}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
                 <div>
-                  <label className="block font-semibold mb-1 text-sm">Pichichi:*</label>
-                  <input
-                    type="text"
-                    className="border border-gray-700 bg-gray-800 text-white p-2 w-4/5 rounded text-sm focus:outline-none focus:border-blue-500"
-                    placeholder=""
-                    value={pichichi}
-                    onChange={e => setPichichi(e.target.value)}
-                  />
+                  <div className="flex flex-col items-center">
+                    <label className="block font-semibold mb-2 text-sm w-4/5">Pichichi:*</label>
+                    <input
+                      type="text"
+                      className="border border-gray-700 bg-gray-800 text-white p-2 w-4/5 rounded text-sm focus:outline-none focus:border-blue-500"
+                      placeholder=""
+                      value={pichichi}
+                      onChange={e => setPichichi(e.target.value)}
+                    />
+                  </div>
                 </div>
               </div>
               <div className="mt-2 flex justify-center">
@@ -663,7 +669,6 @@ export default function PorraPage() {
               </div>
             </div>
           </div>
-
           <h2 className="text-base font-bold mb-3">Fase de Grupos</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 mb-6">
             {Object.entries(groupedMatches.groups).sort().map(([groupLetter, groupMatches]) => {

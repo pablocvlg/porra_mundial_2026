@@ -7,7 +7,9 @@ export default function Navbar() {
   const pathname = usePathname();
 
   const isActive = (path: string) => {
-    return pathname === path ? "bg-gray-800 text-white" : "bg-gray-500 text-white hover:bg-gray-800 hover:text-white";
+    return pathname === path
+      ? "bg-white text-black font-semibold"
+      : "bg-gray-500 text-white hover:bg-gray-800 hover:text-white";
   };
 
   return (
@@ -21,10 +23,10 @@ export default function Navbar() {
             Enviar porra
           </Link>
           <Link
-            href="/"
-            className={`px-8 py-1.5 rounded-full transition ${isActive("/")}`}
+            href="/home"
+            className={`px-8 py-1.5 rounded-full transition ${isActive("/home")}`}
           >
-           Inicio
+            Inicio
           </Link>
           <Link
             href="/clasificacion"
