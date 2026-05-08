@@ -607,7 +607,7 @@ export default function PorraPage() {
         style={{ backgroundImage: `url('/background.avif')` }}>
         <div className="max-w-8xl mx-auto p-4">
           <h1 className="text-xl font-bold mb-4">PORRA MUNDIAL 2026</h1>
-          <div className="max-w-7xl mx-auto">
+          <div className="max-w-6xl mx-auto">
             <div className="bg-gray-900/50 backdrop-blur-md border border-gray-800/50 rounded-lg p-4 mb-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
