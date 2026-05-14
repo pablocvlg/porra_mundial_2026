@@ -609,6 +609,11 @@ export default function PorraPage() {
           <h1 className="text-xl font-bold mb-4">PORRA MUNDIAL 2026</h1>
           <div className="max-w-6xl mx-auto">
             <div className="bg-gray-900/50 backdrop-blur-md border border-gray-800/50 rounded-lg p-4 mb-4">
+              <div className="mt-2 mb-3 ml-9 flex justify-left gap-4">
+                <p className="font-bold text-s text-left text-red-400">
+                  Solo dejará enviar la porra si tu nombre está en la lista. Asegúrate de poner bien tu nombre (incluyendo tildes).
+                </p>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <div className="flex flex-col items-center">
@@ -653,7 +658,7 @@ export default function PorraPage() {
               </div>
               <div className="mt-2 flex justify-center">
                 <p className="font-bold text-xs text-center text-white-300">
-                  *Asegúrate de escribir el nombre y apellido con mayúsculas, tildes u otros carácteres.
+                  *Escribe el nombre y apellido con mayúsculas, tildes u otros carácteres.
                   <br />
                   Ejemplo: Kylian Mbappé | Christian Nørgaard
                 </p>
