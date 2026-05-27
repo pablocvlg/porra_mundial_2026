@@ -205,7 +205,8 @@ function calculateStats(entry: Entry) {
     knockoutByPhase[key] = { correct: 0, finished: 0, advPts };
   });
 
-  let cruceBonusPoints = 0;
+  let cruce1x2Bonus = 0;
+  let cruceExactBonus = 0;
   let knockoutPoints = 0;
   let maxKnockoutPoints = 0;
   let bothFinalists = false;
@@ -247,12 +248,12 @@ function calculateStats(entry: Entry) {
     const reverseOrder = pred.homeTeam === m.awayTeam && pred.awayTeam === m.homeTeam;
     if (normalOrder || reverseOrder) {
       if (predictedWinner && predictedWinner === actualWinner) {
-        cruceBonusPoints++; knockoutPoints++;
+        cruce1x2Bonus++; knockoutPoints++;
       }
       const predH = normalOrder ? pred.homeGoals : pred.awayGoals;
       const predA = normalOrder ? pred.awayGoals : pred.homeGoals;
       if (predH === m.homeGoals && predA === m.awayGoals) {
-        cruceBonusPoints++; knockoutPoints++;
+        cruceExactBonus++; knockoutPoints++;
       }
     }
   }
@@ -271,7 +272,7 @@ function calculateStats(entry: Entry) {
     // Mejores terceros
     allGroupsDone, bestThirdWithPos, bestThirdNoPos, bestThirdPoints, maxBestThirdPoints,
     // Eliminatorias
-    knockoutByPhase, cruceBonusPoints, knockoutPoints, maxKnockoutPoints,
+    knockoutByPhase, cruce1x2Bonus, cruceExactBonus, knockoutPoints, maxKnockoutPoints,
     // Final
     bothFinalists, championCorrect, finalPoints, finalDone, maxFinalPoints,
     // Totales
@@ -489,19 +490,32 @@ export default function PorraStatusPage() {
                                         return (
                                           <DesgloseFila
                                             key={key}
-                                            label={label}
-                                            value={`${d.correct}/${d.finished} · +${advPts} pts c/u`}
+                                            label={`${label} · ${advPts} pts/equipo`}
+                                            value={`${d.correct} de ${d.finished}`}
                                             pts={d.correct * advPts}
                                             color="text-yellow-300"
                                           />
                                         );
                                       })}
-                                      {stats.cruceBonusPoints > 0 && (
-                                        <DesgloseFila
-                                          label="Bonus por cruce exacto"
-                                          pts={stats.cruceBonusPoints}
-                                          color="text-orange-300"
-                                        />
+                                      {(stats.cruce1x2Bonus > 0 || stats.cruceExactBonus > 0) && (
+                                        <>
+                                          {stats.cruce1x2Bonus > 0 && (
+                                            <DesgloseFila
+                                              label="Bonus cruce exacto · 1X2 acertado"
+                                              value={`${stats.cruce1x2Bonus} partidos`}
+                                              pts={stats.cruce1x2Bonus}
+                                              color="text-orange-300"
+                                            />
+                                          )}
+                                          {stats.cruceExactBonus > 0 && (
+                                            <DesgloseFila
+                                              label="Bonus cruce exacto · resultado exacto"
+                                              value={`${stats.cruceExactBonus} partidos`}
+                                              pts={stats.cruceExactBonus}
+                                              color="text-orange-300"
+                                            />
+                                          )}
+                                        </>
                                       )}
                                     </DesgloseSeccion>
                                   )}
@@ -525,6 +539,19 @@ export default function PorraStatusPage() {
                                       />
                                     </DesgloseSeccion>
                                   )}
+
+                                  {/* PICHICHI */}
+                                  <DesgloseSeccion
+                                    title="Pichichi"
+                                    subtotal={0}
+                                    maxSub={5}
+                                  >
+                                    <DesgloseFila
+                                      label={`Predicción: ${entry.pichichi || "—"}`}
+                                      pts="Pendiente"
+                                      color="text-gray-400"
+                                    />
+                                  </DesgloseSeccion>
 
                                   {/* TOTAL */}
                                   <div className="border-t border-gray-600 pt-2 space-y-1">
