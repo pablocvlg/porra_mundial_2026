@@ -347,6 +347,19 @@ export default function PorraStatusPage() {
   const handleSelectChange = (name: string) => { setPorraName(name); handleSearch(name); };
   const handleRowClick = (id: number) => setExpandedRowId(expandedRowId === id ? null : id);
 
+  const translatePhase = (phase: string): string => {
+    const map: Record<string, string> = {
+      "Group":         "Fase de grupos",
+      "Round of 32":   "Dieciseisavos de final",
+      "Round of 16":   "Octavos de final",
+      "Quarter-final": "Cuartos de final",
+      "Semi-final":    "Semifinales",
+      "Final":         "Final",
+      "Third Place":   "3er y 4º puesto",
+    };
+    return map[phase] ?? phase;
+  };
+
   const groupPredictionsByPhase = (predictions: Prediction[]) => {
     const grouped: Record<string, Prediction[]> = {};
     [...predictions].sort((a, b) => a.match.id - b.match.id).forEach(pred => {
@@ -617,7 +630,7 @@ export default function PorraStatusPage() {
                     {Object.entries(groupPredictionsByPhase(selectedEntry.predictions)).map(([phase, preds]) => (
                       <div key={phase} className="mb-4">
                         <h3 className="text-sm font-semibold mb-2 text-blue-400 border-b border-gray-700 pb-1 sticky top-0 bg-gray-900/95 backdrop-blur-sm">
-                          {phase}
+                          {translatePhase(phase)}
                         </h3>
                         <div className="space-y-1">
                           {preds.map(pred => {
