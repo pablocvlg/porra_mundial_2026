@@ -1,69 +1,38 @@
 import { prisma } from './prisma';
 import { Match, Prediction } from '../generated/prisma/client';
 
-// Definir las nuevas reglas de puntuación
-const POINTS_RULES = {
+// Cuando se sepa el pichichi, pon el nombre aquí (exactamente igual que lo escriben los participantes)
+// Ejemplo: const ACTUAL_PICHICHI = "Kylian Mbappé";
+const ACTUAL_PICHICHI: string | null = null;
+
+const POINTS = {
   GROUP: {
-    CORRECT_WINNER: 3,  // Acertar ganador (incluyendo empate)
+    CORRECT_1X2: 3,
+    EXACT_SCORE_BASE: 2,
+    EXACT_SCORE_EXTRA_PER_GOAL: 1, // +1 por cada gol por encima de 2 en total
   },
   QUALIFICATION: {
-    TEAM_QUALIFIES: 5,      // Equipo pasa a brackets
-    CORRECT_POSITION: 3,    // Equipo en posición correcta (1º, 2º, 3º)
-  }
+    TEAM_QUALIFIES: 4,      // equipo pasa de grupos a dieciseisavos
+    CORRECT_POSITION: 3,    // posición exacta (1º, 2º, o mejor tercero)
+  },
+  KNOCKOUT: {
+    ROUND_OF_32_ADVANCE: 5,       // pasa a octavos
+    ROUND_OF_16_ADVANCE: 6,       // pasa a cuartos
+    QUARTERFINAL_ADVANCE: 7,      // pasa a semifinales
+    SEMIFINAL_ADVANCE: 8,         // pasa a la final
+    THIRD_PLACE: 3,               // gana partido de 3er puesto
+    CRUCE_1X2_BONUS: 1,           // bonus cruce exacto + acertar ganador
+    CRUCE_EXACT_SCORE_BONUS: 1,   // bonus cruce exacto + acertar marcador exacto
+  },
+  FINAL: {
+    BOTH_FINALISTS: 4,    // acertar los dos finalistas
+    WORLD_CHAMPION: 10,   // acertar el campeón del mundo
+  },
+  PICHICHI: 5,
+  // TODO: el pichichi requiere añadir el campo `actualPichichi String?` al modelo Porra
+  // y actualizarlo desde el admin. Una vez añadido, descomentar la lógica en updateEntryPoints.
 };
 
-// Función para calcular puntos por resultado exacto
-function calculateExactScorePoints(homeGoals: number, awayGoals: number): number {
-  const totalGoals = homeGoals + awayGoals;
-  
-  // Si hay 1 gol o menos en total, dar 1 punto
-  if (totalGoals <= 1) {
-    return 1;
-  }
-  
-  // Si hay más de 1 gol, dar tantos puntos como goles haya
-  return totalGoals;
-}
-
-export function calculateMatchPoints(
-  prediction: Prediction,
-  match: Match
-): number {
-  // Solo calcular puntos si el partido está finalizado
-  if (!match.isFinished || match.homeGoals === null || match.awayGoals === null) {
-    return 0;
-  }
-
-  let points = 0;
-  const isGroup = match.phase === 'Group';
-
-  // Solo calcular puntos de partidos de fase de grupos
-  if (isGroup) {
-    // Determinar ganador de la predicción
-    const predWinner = prediction.homeGoals > prediction.awayGoals ? 'home' : 
-                       prediction.awayGoals > prediction.homeGoals ? 'away' : 'draw';
-    
-    // Determinar ganador del partido real
-    const matchWinner = match.homeGoals > match.awayGoals ? 'home' : 
-                        match.awayGoals > match.homeGoals ? 'away' : 'draw';
-
-    // Puntos por acertar ganador (incluyendo empate)
-    if (predWinner === matchWinner) {
-      points += POINTS_RULES.GROUP.CORRECT_WINNER;
-    }
-
-    // Puntos por acertar resultado exacto
-    if (prediction.homeGoals === match.homeGoals && 
-        prediction.awayGoals === match.awayGoals) {
-      const exactScorePoints = calculateExactScorePoints(match.homeGoals, match.awayGoals);
-      points += exactScorePoints;
-    }
-  }
-
-  return points;
-}
-
-// Tipos para estadísticas de equipos
 type TeamStats = {
   team: string;
   played: number;
@@ -76,7 +45,6 @@ type TeamStats = {
   points: number;
 };
 
-// Función para calcular standings de un grupo (basada en tu frontend)
 function calculateGroupStandings(
   groupMatches: Array<{ prediction: Prediction; match: Match }>,
   usePrediction: boolean
@@ -86,35 +54,17 @@ function calculateGroupStandings(
   groupMatches.forEach(({ prediction, match }) => {
     const homeTeam = match.homeTeam;
     const awayTeam = match.awayTeam;
-
     if (!homeTeam || !awayTeam) return;
 
-    // Inicializar equipos si no existen
     [homeTeam, awayTeam].forEach(team => {
       if (!statsMap[team]) {
-        statsMap[team] = {
-          team,
-          played: 0,
-          won: 0,
-          drawn: 0,
-          lost: 0,
-          goalsFor: 0,
-          goalsAgainst: 0,
-          goalDifference: 0,
-          points: 0,
-        };
+        statsMap[team] = { team, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, goalDifference: 0, points: 0 };
       }
     });
 
-    // Usar predicción o resultado real según el parámetro
-    const homeGoals = usePrediction 
-      ? prediction.homeGoals 
-      : (match.homeGoals ?? 0);
-    const awayGoals = usePrediction 
-      ? prediction.awayGoals 
-      : (match.awayGoals ?? 0);
+    const homeGoals = usePrediction ? prediction.homeGoals : (match.homeGoals ?? 0);
+    const awayGoals = usePrediction ? prediction.awayGoals : (match.awayGoals ?? 0);
 
-    // Actualizar estadísticas
     statsMap[homeTeam].played++;
     statsMap[awayTeam].played++;
     statsMap[homeTeam].goalsFor += homeGoals;
@@ -138,292 +88,301 @@ function calculateGroupStandings(
     }
   });
 
-  // Calcular diferencia de goles
-  Object.values(statsMap).forEach(stats => {
-    stats.goalDifference = stats.goalsFor - stats.goalsAgainst;
+  Object.values(statsMap).forEach(s => {
+    s.goalDifference = s.goalsFor - s.goalsAgainst;
   });
 
-  // Ordenar con criterios FIFA (igual que tu frontend)
   const teams = Object.values(statsMap);
-  
+
   return teams.sort((a, b) => {
-    // 1. Puntos
     if (b.points !== a.points) return b.points - a.points;
 
-    // 2. Enfrentamiento directo (si están empatados a puntos)
     const tiedTeams = teams.filter(t => t.points === a.points);
-    
+
     if (tiedTeams.length === 2 && tiedTeams.includes(a) && tiedTeams.includes(b)) {
-      // Empate entre 2 equipos: buscar el partido entre ellos
-      const directMatch = groupMatches.find(gm => 
+      const directMatch = groupMatches.find(gm =>
         (gm.match.homeTeam === a.team && gm.match.awayTeam === b.team) ||
         (gm.match.homeTeam === b.team && gm.match.awayTeam === a.team)
       );
-
       if (directMatch) {
-        const homeGoals = usePrediction 
-          ? directMatch.prediction.homeGoals 
-          : (directMatch.match.homeGoals ?? 0);
-        const awayGoals = usePrediction 
-          ? directMatch.prediction.awayGoals 
-          : (directMatch.match.awayGoals ?? 0);
-
+        const hg = usePrediction ? directMatch.prediction.homeGoals : (directMatch.match.homeGoals ?? 0);
+        const ag = usePrediction ? directMatch.prediction.awayGoals : (directMatch.match.awayGoals ?? 0);
         if (directMatch.match.homeTeam === a.team) {
-          if (homeGoals > awayGoals) return -1; // a gana
-          if (homeGoals < awayGoals) return 1;  // b gana
+          if (hg > ag) return -1;
+          if (hg < ag) return 1;
         } else {
-          if (awayGoals > homeGoals) return -1; // a gana
-          if (awayGoals < homeGoals) return 1;  // b gana
+          if (ag > hg) return -1;
+          if (ag < hg) return 1;
         }
       }
     } else if (tiedTeams.length >= 3 && tiedTeams.includes(a) && tiedTeams.includes(b)) {
-      // Empate entre 3 o más equipos: calcular mini-tabla
-      const tiedTeamNames = tiedTeams.map(t => t.team);
-      const miniTableStats: Record<string, { points: number; gd: number; gf: number }> = {};
-
-      tiedTeamNames.forEach(team => {
-        miniTableStats[team] = { points: 0, gd: 0, gf: 0 };
-      });
+      const tiedNames = tiedTeams.map(t => t.team);
+      const mini: Record<string, { points: number; gd: number; gf: number }> = {};
+      tiedNames.forEach(t => { mini[t] = { points: 0, gd: 0, gf: 0 }; });
 
       groupMatches.forEach(gm => {
-        if (tiedTeamNames.includes(gm.match.homeTeam) && tiedTeamNames.includes(gm.match.awayTeam)) {
-          const homeGoals = usePrediction 
-            ? gm.prediction.homeGoals 
-            : (gm.match.homeGoals ?? 0);
-          const awayGoals = usePrediction 
-            ? gm.prediction.awayGoals 
-            : (gm.match.awayGoals ?? 0);
-
-          miniTableStats[gm.match.homeTeam].gf += homeGoals;
-          miniTableStats[gm.match.homeTeam].gd += (homeGoals - awayGoals);
-          miniTableStats[gm.match.awayTeam].gf += awayGoals;
-          miniTableStats[gm.match.awayTeam].gd += (awayGoals - homeGoals);
-
-          if (homeGoals > awayGoals) {
-            miniTableStats[gm.match.homeTeam].points += 3;
-          } else if (homeGoals < awayGoals) {
-            miniTableStats[gm.match.awayTeam].points += 3;
-          } else {
-            miniTableStats[gm.match.homeTeam].points += 1;
-            miniTableStats[gm.match.awayTeam].points += 1;
-          }
-        }
+        if (!tiedNames.includes(gm.match.homeTeam) || !tiedNames.includes(gm.match.awayTeam)) return;
+        const hg = usePrediction ? gm.prediction.homeGoals : (gm.match.homeGoals ?? 0);
+        const ag = usePrediction ? gm.prediction.awayGoals : (gm.match.awayGoals ?? 0);
+        mini[gm.match.homeTeam].gf += hg;
+        mini[gm.match.homeTeam].gd += hg - ag;
+        mini[gm.match.awayTeam].gf += ag;
+        mini[gm.match.awayTeam].gd += ag - hg;
+        if (hg > ag) mini[gm.match.homeTeam].points += 3;
+        else if (hg < ag) mini[gm.match.awayTeam].points += 3;
+        else { mini[gm.match.homeTeam].points += 1; mini[gm.match.awayTeam].points += 1; }
       });
 
-      const aMini = miniTableStats[a.team];
-      const bMini = miniTableStats[b.team];
-
-      if (bMini.points !== aMini.points) return bMini.points - aMini.points;
-      if (bMini.gd !== aMini.gd) return bMini.gd - aMini.gd;
-      if (bMini.gf !== aMini.gf) return bMini.gf - aMini.gf;
+      const am = mini[a.team];
+      const bm = mini[b.team];
+      if (bm.points !== am.points) return bm.points - am.points;
+      if (bm.gd !== am.gd) return bm.gd - am.gd;
+      if (bm.gf !== am.gf) return bm.gf - am.gf;
     }
 
-    // 3. Diferencia de goles general
     if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
-
-    // 4. Goles a favor general
     return b.goalsFor - a.goalsFor;
   });
 }
 
-// Función para calcular puntos de clasificación
-// Función para calcular puntos de clasificación por grupo (1º y 2º)
+// --- Puntos por partido individual ---
+
+function calculateGroupMatchPoints(prediction: Prediction, match: Match): number {
+  if (!match.isFinished || match.homeGoals === null || match.awayGoals === null) return 0;
+
+  let points = 0;
+
+  const predWinner = prediction.homeGoals > prediction.awayGoals ? 'home'
+    : prediction.awayGoals > prediction.homeGoals ? 'away' : 'draw';
+  const matchWinner = match.homeGoals > match.awayGoals ? 'home'
+    : match.awayGoals > match.homeGoals ? 'away' : 'draw';
+
+  if (predWinner === matchWinner) {
+    points += POINTS.GROUP.CORRECT_1X2;
+  }
+
+  if (prediction.homeGoals === match.homeGoals && prediction.awayGoals === match.awayGoals) {
+    const totalGoals = match.homeGoals + match.awayGoals;
+    points += POINTS.GROUP.EXACT_SCORE_BASE + Math.max(0, totalGoals - 2);
+  }
+
+  return points;
+}
+
+function getMatchWinner(
+  homeTeam: string, awayTeam: string,
+  homeGoals: number, awayGoals: number,
+  penaltyWinner: string | null
+): string | null {
+  if (homeGoals > awayGoals) return homeTeam;
+  if (awayGoals > homeGoals) return awayTeam;
+  if (penaltyWinner === 'home') return homeTeam;
+  if (penaltyWinner === 'away') return awayTeam;
+  return null;
+}
+
+function calculateKnockoutMatchPoints(prediction: Prediction, match: Match): number {
+  if (!match.isFinished || match.homeGoals === null || match.awayGoals === null) return 0;
+  if (!prediction.homeTeam || !prediction.awayTeam) return 0;
+
+  let points = 0;
+  const phase = match.phase;
+
+  const actualWinner = getMatchWinner(match.homeTeam, match.awayTeam, match.homeGoals, match.awayGoals, match.penaltyWinner);
+  const predictedWinner = getMatchWinner(prediction.homeTeam, prediction.awayTeam, prediction.homeGoals, prediction.awayGoals, prediction.penaltyWinner);
+
+  // --- FINAL: caso especial ---
+  if (phase === 'Final') {
+    const bothFinalists =
+      (prediction.homeTeam === match.homeTeam && prediction.awayTeam === match.awayTeam) ||
+      (prediction.homeTeam === match.awayTeam && prediction.awayTeam === match.homeTeam);
+
+    if (bothFinalists) points += POINTS.FINAL.BOTH_FINALISTS;
+    if (predictedWinner && predictedWinner === actualWinner) points += POINTS.FINAL.WORLD_CHAMPION;
+
+    return points;
+  }
+
+  // --- Resto de rondas (R32, R16, QF, SF, 3er puesto) ---
+
+  // Puntos por acertar el equipo que avanza
+  if (predictedWinner && predictedWinner === actualWinner) {
+    if (phase === 'Round of 32') points += POINTS.KNOCKOUT.ROUND_OF_32_ADVANCE;
+    else if (phase === 'Round of 16') points += POINTS.KNOCKOUT.ROUND_OF_16_ADVANCE;
+    else if (phase === 'Quarterfinal' || phase === 'Quarter-final') points += POINTS.KNOCKOUT.QUARTERFINAL_ADVANCE;
+    else if (phase === 'Semifinal' || phase === 'Semi-final') points += POINTS.KNOCKOUT.SEMIFINAL_ADVANCE;
+    else if (phase === 'Third Place') points += POINTS.KNOCKOUT.THIRD_PLACE;
+  }
+
+  // Bonus por cruce exacto (ambos equipos correctos, independientemente de local/visitante)
+  const normalOrder = prediction.homeTeam === match.homeTeam && prediction.awayTeam === match.awayTeam;
+  const reverseOrder = prediction.homeTeam === match.awayTeam && prediction.awayTeam === match.homeTeam;
+
+  if (normalOrder || reverseOrder) {
+    // +1 por acertar el ganador (1X2)
+    if (predictedWinner && predictedWinner === actualWinner) {
+      points += POINTS.KNOCKOUT.CRUCE_1X2_BONUS;
+    }
+
+    // +1 por acertar el marcador exacto (sin contar penaltis)
+    const predH = normalOrder ? prediction.homeGoals : prediction.awayGoals;
+    const predA = normalOrder ? prediction.awayGoals : prediction.homeGoals;
+    if (predH === match.homeGoals && predA === match.awayGoals) {
+      points += POINTS.KNOCKOUT.CRUCE_EXACT_SCORE_BONUS;
+    }
+  }
+
+  return points;
+}
+
+export function calculateMatchPoints(prediction: Prediction, match: Match): number {
+  if (match.phase === 'Group') return calculateGroupMatchPoints(prediction, match);
+  return calculateKnockoutMatchPoints(prediction, match);
+}
+
+// --- Puntos de clasificación de grupos (1º y 2º por grupo) ---
+
 export async function calculateGroupQualificationPoints(entryId: number): Promise<number> {
-  let qualificationPoints = 0;
+  let points = 0;
 
   const predictions = await prisma.prediction.findMany({
     where: { entryId },
-    include: { match: true }
+    include: { match: true },
   });
 
-  const groupPredictions = predictions.filter(p => p.match.phase === 'Group');
+  const groupPreds = predictions.filter(p => p.match.phase === 'Group');
 
-  // Agrupar por letra de grupo
-  const groupsByLetter: Record<string, typeof groupPredictions> = {};
-  
-  groupPredictions.forEach(pred => {
-    const groupLetter = pred.match.group;
-    if (groupLetter) {
-      if (!groupsByLetter[groupLetter]) {
-        groupsByLetter[groupLetter] = [];
-      }
-      groupsByLetter[groupLetter].push(pred);
+  const groupsByLetter: Record<string, typeof groupPreds> = {};
+  groupPreds.forEach(pred => {
+    const letter = pred.match.group;
+    if (letter) {
+      if (!groupsByLetter[letter]) groupsByLetter[letter] = [];
+      groupsByLetter[letter].push(pred);
     }
   });
 
-  // Para cada grupo, verificar si está completo y calcular puntos
-  for (const [groupLetter, groupPreds] of Object.entries(groupsByLetter)) {
-    // Verificar si ESTE grupo específico está completo
-    const groupFinished = groupPreds.every(p => p.match.isFinished);
-    
-    if (!groupFinished) {
-      continue; // Saltar este grupo si no está terminado
-    }
+  for (const groupPreds of Object.values(groupsByLetter)) {
+    // Solo calcular si el grupo está finalizado completamente
+    if (!groupPreds.every(p => p.match.isFinished)) continue;
 
-    // Convertir a formato esperado
-    const groupMatches = groupPreds.map(pred => ({
-      prediction: pred,
-      match: pred.match
-    }));
+    const groupMatches = groupPreds.map(p => ({ prediction: p, match: p.match }));
+    const predicted = calculateGroupStandings(groupMatches, true);
+    const real = calculateGroupStandings(groupMatches, false);
+    const realTop2 = real.slice(0, 2).map(s => s.team);
 
-    // Calcular tabla predicha
-    const predictedStandings = calculateGroupStandings(groupMatches, true);
-    
-    // Calcular tabla real
-    const realStandings = calculateGroupStandings(groupMatches, false);
+    for (let pos = 0; pos < 2; pos++) {
+      const predictedTeam = predicted[pos]?.team;
+      if (!predictedTeam) continue;
 
-    // Comparar solo posiciones 1º y 2º (siempre clasifican)
-    for (let position = 0; position < 2; position++) {
-      const predictedTeam = predictedStandings[position]?.team;
-      const realTeam = realStandings[position]?.team;
-
-      if (!predictedTeam || !realTeam) continue;
-
-      // Verificar si el equipo que predije clasificó (está en top 2 real)
-      const realTop2 = realStandings.slice(0, 2).map(s => s.team);
-      
       if (realTop2.includes(predictedTeam)) {
-        // El equipo clasificó
-        qualificationPoints += POINTS_RULES.QUALIFICATION.TEAM_QUALIFIES;
-
-        // Acerté la posición exacta
-        if (predictedTeam === realTeam) {
-          qualificationPoints += POINTS_RULES.QUALIFICATION.CORRECT_POSITION;
+        points += POINTS.QUALIFICATION.TEAM_QUALIFIES;
+        if (predictedTeam === real[pos]?.team) {
+          points += POINTS.QUALIFICATION.CORRECT_POSITION;
         }
       }
     }
   }
 
-  return qualificationPoints;
+  return points;
 }
 
-// Función para calcular puntos de mejores terceros (solo cuando TODOS los grupos terminen)
+// --- Puntos por mejores terceros (solo cuando TODOS los grupos han terminado) ---
+
 export async function calculateBestThirdsPoints(entryId: number): Promise<number> {
-  let thirdPlacePoints = 0;
+  let points = 0;
 
   const predictions = await prisma.prediction.findMany({
     where: { entryId },
-    include: { match: true }
+    include: { match: true },
   });
 
-  const groupPredictions = predictions.filter(p => p.match.phase === 'Group');
+  const groupPreds = predictions.filter(p => p.match.phase === 'Group');
 
-  // Verificar si TODOS los grupos están finalizados
-  const allGroupsFinished = groupPredictions.every(p => p.match.isFinished);
-  
-  if (!allGroupsFinished) {
-    return 0; // No calcular terceros hasta que todos los grupos terminen
-  }
+  if (!groupPreds.every(p => p.match.isFinished)) return 0;
 
-  // Agrupar por letra de grupo
-  const groupsByLetter: Record<string, typeof groupPredictions> = {};
-  
-  groupPredictions.forEach(pred => {
-    const groupLetter = pred.match.group;
-    if (groupLetter) {
-      if (!groupsByLetter[groupLetter]) {
-        groupsByLetter[groupLetter] = [];
-      }
-      groupsByLetter[groupLetter].push(pred);
+  const groupsByLetter: Record<string, typeof groupPreds> = {};
+  groupPreds.forEach(pred => {
+    const letter = pred.match.group;
+    if (letter) {
+      if (!groupsByLetter[letter]) groupsByLetter[letter] = [];
+      groupsByLetter[letter].push(pred);
     }
   });
 
-  // Calcular todos los terceros lugares (predichos y reales)
-  const predictedThirds: Array<{ team: string; group: string; stats: any }> = [];
-  const realThirds: Array<{ team: string; group: string; stats: any }> = [];
+  const predictedThirds: Array<{ team: string; group: string; stats: TeamStats }> = [];
+  const realThirds: Array<{ team: string; group: string; stats: TeamStats }> = [];
 
-  for (const [groupLetter, groupPreds] of Object.entries(groupsByLetter)) {
-    const groupMatches = groupPreds.map(pred => ({
-      prediction: pred,
-      match: pred.match
-    }));
+  for (const [letter, preds] of Object.entries(groupsByLetter)) {
+    const groupMatches = preds.map(p => ({ prediction: p, match: p.match }));
+    const predicted = calculateGroupStandings(groupMatches, true);
+    const real = calculateGroupStandings(groupMatches, false);
 
-    const predictedStandings = calculateGroupStandings(groupMatches, true);
-    const realStandings = calculateGroupStandings(groupMatches, false);
-
-    if (predictedStandings[2]) {
-      predictedThirds.push({
-        team: predictedStandings[2].team,
-        group: groupLetter,
-        stats: predictedStandings[2]
-      });
-    }
-
-    if (realStandings[2]) {
-      realThirds.push({
-        team: realStandings[2].team,
-        group: groupLetter,
-        stats: realStandings[2]
-      });
-    }
+    if (predicted[2]) predictedThirds.push({ team: predicted[2].team, group: letter, stats: predicted[2] });
+    if (real[2]) realThirds.push({ team: real[2].team, group: letter, stats: real[2] });
   }
 
-  // Ordenar terceros predichos
-  const sortedPredictedThirds = predictedThirds.sort((a, b) => {
-    if (b.stats.points !== a.stats.points) return b.stats.points - a.stats.points;
-    if (b.stats.goalDifference !== a.stats.goalDifference) return b.stats.goalDifference - a.stats.goalDifference;
-    return b.stats.goalsFor - a.stats.goalsFor;
-  }).slice(0, 8); // Top 8
+  const sortThirds = (thirds: typeof realThirds) =>
+    [...thirds].sort((a, b) => {
+      if (b.stats.points !== a.stats.points) return b.stats.points - a.stats.points;
+      if (b.stats.goalDifference !== a.stats.goalDifference) return b.stats.goalDifference - a.stats.goalDifference;
+      return b.stats.goalsFor - a.stats.goalsFor;
+    }).slice(0, 8);
 
-  // Ordenar terceros reales
-  const sortedRealThirds = realThirds.sort((a, b) => {
-    if (b.stats.points !== a.stats.points) return b.stats.points - a.stats.points;
-    if (b.stats.goalDifference !== a.stats.goalDifference) return b.stats.goalDifference - a.stats.goalDifference;
-    return b.stats.goalsFor - a.stats.goalsFor;
-  }).slice(0, 8); // Top 8
+  const top8Predicted = sortThirds(predictedThirds);
+  const top8Real = sortThirds(realThirds);
+  const realBestThirdsTeams = top8Real.map(t => t.team);
 
-  const realBestThirdsTeams = sortedRealThirds.map(t => t.team);
-
-  // Calcular puntos por acertar mejores terceros
-  sortedPredictedThirds.forEach((predictedThird, index) => {
-    // Si el equipo que predije como mejor tercero realmente clasificó
+  for (const predictedThird of top8Predicted) {
     if (realBestThirdsTeams.includes(predictedThird.team)) {
-      thirdPlacePoints += POINTS_RULES.QUALIFICATION.TEAM_QUALIFIES;
+      points += POINTS.QUALIFICATION.TEAM_QUALIFIES;
 
-      // Si además acerté que quedaría tercero en su grupo
+      // Posición exacta: acertó que ese equipo quedaría 3º en su grupo
       const realThird = realThirds.find(t => t.group === predictedThird.group);
       if (realThird && realThird.team === predictedThird.team) {
-        thirdPlacePoints += POINTS_RULES.QUALIFICATION.CORRECT_POSITION;
+        points += POINTS.QUALIFICATION.CORRECT_POSITION;
       }
     }
-  });
-
-  return thirdPlacePoints;
-}
-
-// Actualizar la función principal
-export async function updateEntryPoints(entryId: number) {
-  const predictions = await prisma.prediction.findMany({
-    where: { entryId },
-    include: { match: true }
-  });
-
-  // Calcular puntos de partidos individuales
-  let matchPoints = 0;
-  for (const pred of predictions) {
-    matchPoints += calculateMatchPoints(pred, pred.match);
   }
 
-  // Calcular puntos de clasificación (1º y 2º) - se calcula grupo por grupo
-  const groupQualificationPoints = await calculateGroupQualificationPoints(entryId);
+  return points;
+}
 
-  // Calcular puntos de mejores terceros - solo cuando todos los grupos terminen
-  const bestThirdsPoints = await calculateBestThirdsPoints(entryId);
+// --- Actualizar puntos de una entry ---
 
-  const totalPoints = matchPoints + groupQualificationPoints + bestThirdsPoints;
+export async function updateEntryPoints(entryId: number): Promise<number> {
+  const predictions = await prisma.prediction.findMany({
+    where: { entryId },
+    include: { match: true },
+  });
+
+  let total = 0;
+
+  for (const pred of predictions) {
+    total += calculateMatchPoints(pred, pred.match);
+  }
+
+  total += await calculateGroupQualificationPoints(entryId);
+  total += await calculateBestThirdsPoints(entryId);
+
+  if (ACTUAL_PICHICHI) {
+    const entry = await prisma.entry.findUnique({ where: { id: entryId } });
+    if (entry?.pichichi && entry.pichichi.trim().toLowerCase() === ACTUAL_PICHICHI.trim().toLowerCase()) {
+      total += POINTS.PICHICHI;
+    }
+  }
 
   await prisma.entry.update({
     where: { id: entryId },
-    data: { totalPoints }
+    data: { totalPoints: total },
   });
 
-  return totalPoints;
+  return total;
 }
 
-export async function updateAllPorraPoints(porraId: number) {
+export async function updateAllPorraPoints(porraId: number): Promise<void> {
   const entries = await prisma.entry.findMany({
     where: { porraId },
-    select: { id: true }
+    select: { id: true },
   });
 
   for (const entry of entries) {

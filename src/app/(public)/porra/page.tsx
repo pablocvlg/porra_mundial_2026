@@ -361,7 +361,17 @@ export default function PorraPage() {
       }
     }
 
-    return { groups, knockout, groupStandings, bestThirds };
+    const allGroupsFilled = Object.values(groups).every(groupMatches =>
+      groupMatches.some(match => {
+        const pred = predictions[match.id];
+        if (!pred) return false;
+        const homeGoals = typeof pred.homeGoals === "number" ? pred.homeGoals : 0;
+        const awayGoals = typeof pred.awayGoals === "number" ? pred.awayGoals : 0;
+        return homeGoals !== 0 || awayGoals !== 0;
+      })
+    );
+
+    return { groups, knockout, groupStandings, bestThirds, allGroupsFilled };
   }, [matches, predictions, penaltyWinners]);
 
   const handlePredictionChange = (matchId: number, field: "homeGoals" | "awayGoals", value: string) => {
@@ -755,7 +765,15 @@ export default function PorraPage() {
           {groupedMatches.knockout.length > 0 && (
             <>
               <h2 className="text-base font-bold mb-2">Eliminatorias</h2>
-              <div className="bg-gray-900/90 border border-gray-800 rounded-lg pt-3 pb-3 pl-2 pr-2 mb-4 overflow-x-auto">
+              <div className="relative bg-gray-900/90 border border-gray-800 rounded-lg pt-3 pb-3 pl-2 pr-2 mb-4 overflow-x-auto">
+                {!groupedMatches.allGroupsFilled && (
+                  <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg backdrop-blur-sm bg-black/60">
+                    <div className="text-center px-6 py-4 bg-gray-900/90 border border-gray-700 rounded-lg max-w-sm">
+                      <p className="text-yellow-400 font-bold text-base mb-1">Bracket no disponible</p>
+                      <p className="text-gray-300 text-sm">Rellena al menos un resultado en cada grupo para generar el bracket de eliminatorias.</p>
+                    </div>
+                  </div>
+                )}
                 <div className="flex justify-between gap-2 min-w-[1100px] h-[700px]">
                   {/* Round of 32 - Izquierda */}
                   <div className="flex flex-col justify-around w-36">
