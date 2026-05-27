@@ -132,7 +132,7 @@ export default function PorraStatusPage() {
         exactMatches++;
         correctWinner++;
         const totalGoals = homeGoals + awayGoals;
-        const points = totalGoals <= 1 ? 1 : totalGoals;
+        const points = 2 + Math.max(0, totalGoals - 2);
         exactMatchPoints += points;
       } else {
         const predWinner = pred.homeGoals > pred.awayGoals ? 'home' :
@@ -176,7 +176,7 @@ export default function PorraStatusPage() {
       }
     }
 
-    const qualificationPoints = (qualifiedTeams * 5) + (qualifiedWithPosition * 3);
+    const qualificationPoints = (qualifiedTeams * 4) + (qualifiedWithPosition * 7);
     return { exactMatches, correctWinner, exactMatchPoints, qualifiedTeams, qualifiedWithPosition, qualificationPoints };
   };
 
@@ -314,13 +314,13 @@ export default function PorraStatusPage() {
                                       <div className="flex justify-between items-center p-2 bg-gray-700/50 rounded">
                                         <span className="text-gray-300">Clasificados + posición:</span>
                                         <span className="font-semibold text-purple-400 pr-4">
-                                          <span className="text-purple-300">(+{stats.qualifiedWithPosition * 8}pt.)</span> {stats.qualifiedWithPosition}
+                                          <span className="text-purple-300">(+{stats.qualifiedWithPosition * 7}pt.)</span> {stats.qualifiedWithPosition}
                                         </span>
                                       </div>
                                       <div className="flex justify-between items-center p-2 bg-gray-700/50 rounded">
                                         <span className="text-gray-300">Solo clasificados:</span>
                                         <span className="font-semibold text-indigo-400 pr-4">
-                                          <span className="text-indigo-300">(+{stats.qualifiedTeams * 5}pt.)</span> {stats.qualifiedTeams}
+                                          <span className="text-indigo-300">(+{stats.qualifiedTeams * 4}pt.)</span> {stats.qualifiedTeams}
                                         </span>
                                       </div>
                                     </div>
