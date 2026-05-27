@@ -446,46 +446,35 @@ export default function PorraStatusPage() {
                                   )}
 
                                   {/* CLASIFICACIÓN */}
-                                  {stats.finishedGroups > 0 && (
-                                    <DesgloseSeccion
-                                      title={`Clasificación · ${stats.finishedGroups}/${stats.totalGroups} grupos`}
-                                      subtotal={stats.qualificationPoints + stats.bestThirdPoints}
-                                      maxSub={stats.maxQualificationPoints + stats.maxBestThirdPoints}
-                                    >
-                                      <DesgloseFila
-                                        label="Clasificados con posición exacta"
-                                        value={String(stats.qualifiedWithPos)}
-                                        pts={stats.qualifiedWithPos * 7}
-                                        color="text-purple-300"
-                                      />
-                                      <DesgloseFila
-                                        label="Clasificados sin posición"
-                                        value={String(stats.qualifiedNoPos)}
-                                        pts={stats.qualifiedNoPos * 4}
-                                        color="text-indigo-300"
-                                      />
-                                      {stats.allGroupsDone ? (
-                                        <>
-                                          <DesgloseFila
-                                            label="Mejores 3ºs con posición"
-                                            value={String(stats.bestThirdWithPos)}
-                                            pts={stats.bestThirdWithPos * 7}
-                                            color="text-purple-300"
-                                          />
-                                          <DesgloseFila
-                                            label="Mejores 3ºs sin posición"
-                                            value={String(stats.bestThirdNoPos)}
-                                            pts={stats.bestThirdNoPos * 4}
-                                            color="text-indigo-300"
-                                          />
-                                        </>
-                                      ) : (
-                                        <div className="px-2 py-1 text-xs text-gray-500 italic">
-                                          Mejores terceros: pendiente de que terminen todos los grupos
-                                        </div>
-                                      )}
-                                    </DesgloseSeccion>
-                                  )}
+                                  {stats.finishedGroups > 0 && (() => {
+                                    const totalCorrect = stats.qualifiedWithPos + stats.qualifiedNoPos + (stats.allGroupsDone ? stats.bestThirdWithPos + stats.bestThirdNoPos : 0);
+                                    const totalWithExactPos = stats.qualifiedWithPos + (stats.allGroupsDone ? stats.bestThirdWithPos : 0);
+                                    return (
+                                      <DesgloseSeccion
+                                        title={stats.allGroupsDone ? "Clasificación · 32 clasificados" : `Clasificación · ${stats.finishedGroups}/${stats.totalGroups} grupos`}
+                                        subtotal={stats.qualificationPoints + stats.bestThirdPoints}
+                                        maxSub={stats.maxQualificationPoints + stats.maxBestThirdPoints}
+                                      >
+                                        <DesgloseFila
+                                          label="Clasificados acertados"
+                                          value={String(totalCorrect)}
+                                          pts={totalCorrect * 4}
+                                          color="text-indigo-300"
+                                        />
+                                        <DesgloseFila
+                                          label="Clasificados acertados con posición exacta"
+                                          value={String(totalWithExactPos)}
+                                          pts={totalWithExactPos * 3}
+                                          color="text-purple-300"
+                                        />
+                                        {!stats.allGroupsDone && (
+                                          <div className="px-2 py-1 text-xs text-gray-500 italic">
+                                            Mejores terceros: pendiente de que terminen todos los grupos
+                                          </div>
+                                        )}
+                                      </DesgloseSeccion>
+                                    );
+                                  })()}
 
                                   {/* ELIMINATORIAS */}
                                   {KNOCKOUT_PHASES.some(p => stats.knockoutByPhase[p.key]?.finished > 0) && (
