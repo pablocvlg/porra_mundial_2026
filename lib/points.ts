@@ -1,5 +1,135 @@
 import { prisma } from './prisma';
 import { Match, Prediction } from '../generated/prisma/client';
+import bestThirdsCombinations from '../public/bestThirdsCombinations.json';
+
+// Mapeo matchId → índice en la lista ordenada de mejores terceros (igual que el frontend)
+const THIRD_PLACE_MATCH_MAPPING: Record<number, number> = {
+  73: 3, 74: 5, 79: 2, 80: 4, 83: 0, 84: 7, 87: 1, 88: 6,
+};
+
+function isPlaceholder(name: string): boolean {
+  return /^[1-2]º\s*Grupo\s*[A-L]$/i.test(name)
+    || /^3º\s*Grupo\s*[A-L/]+$/i.test(name)
+    || /^Ganador(?:\s+del|\s+de)?\s+Partido\s+\d+$/i.test(name)
+    || /^Perdedor(?:\s+del|\s+de)?\s+Partido\s+\d+$/i.test(name);
+}
+
+function computeRealGroupStandings(
+  matches: Array<{ homeTeam: string; awayTeam: string; homeGoals: number | null; awayGoals: number | null }>
+): Array<{ team: string; points: number; gd: number; gf: number }> {
+  const stats: Record<string, { team: string; points: number; gd: number; gf: number; ga: number }> = {};
+  matches.forEach(m => {
+    if (m.homeGoals === null || m.awayGoals === null) return;
+    [m.homeTeam, m.awayTeam].forEach(t => {
+      if (!stats[t]) stats[t] = { team: t, points: 0, gd: 0, gf: 0, ga: 0 };
+    });
+    const hg = m.homeGoals, ag = m.awayGoals;
+    stats[m.homeTeam].gf += hg; stats[m.homeTeam].ga += ag;
+    stats[m.awayTeam].gf += ag; stats[m.awayTeam].ga += hg;
+    if (hg > ag) stats[m.homeTeam].points += 3;
+    else if (hg < ag) stats[m.awayTeam].points += 3;
+    else { stats[m.homeTeam].points += 1; stats[m.awayTeam].points += 1; }
+  });
+  Object.values(stats).forEach(s => { s.gd = s.gf - s.ga; });
+  return Object.values(stats).sort((a, b) =>
+    b.points - a.points || b.gd - a.gd || b.gf - a.gf
+  );
+}
+
+async function resolveTeamNameFromDB(placeholder: string, matchId: number): Promise<string> {
+  const name = placeholder.trim();
+
+  // "1º Grupo A" / "2º Grupo B"
+  const groupPosMatch = name.match(/^([1-2])º\s*Grupo\s*([A-L])$/i);
+  if (groupPosMatch) {
+    const position = parseInt(groupPosMatch[1]) - 1;
+    const groupLetter = groupPosMatch[2].toUpperCase();
+    const groupMatches = await prisma.match.findMany({ where: { phase: 'Group', group: groupLetter } });
+    if (!groupMatches.every(m => m.isFinished)) return name;
+    const standings = computeRealGroupStandings(groupMatches);
+    return standings[position]?.team ?? name;
+  }
+
+  // "Ganador Partido N" / "Ganador del Partido N"
+  const winnerMatch = name.match(/^Ganador(?:\s+del|\s+de)?\s+Partido\s+(\d+)$/i);
+  if (winnerMatch) {
+    const refId = parseInt(winnerMatch[1]);
+    const ref = await prisma.match.findUnique({ where: { id: refId } });
+    if (!ref || !ref.isFinished || ref.homeGoals === null || ref.awayGoals === null) return name;
+    const winner = getMatchWinner(ref.homeTeam, ref.awayTeam, ref.homeGoals, ref.awayGoals, ref.penaltyWinner);
+    return winner ?? name;
+  }
+
+  // "Perdedor Partido N"
+  const loserMatch = name.match(/^Perdedor(?:\s+del|\s+de)?\s+Partido\s+(\d+)$/i);
+  if (loserMatch) {
+    const refId = parseInt(loserMatch[1]);
+    const ref = await prisma.match.findUnique({ where: { id: refId } });
+    if (!ref || !ref.isFinished || ref.homeGoals === null || ref.awayGoals === null) return name;
+    const winner = getMatchWinner(ref.homeTeam, ref.awayTeam, ref.homeGoals, ref.awayGoals, ref.penaltyWinner);
+    if (winner === ref.homeTeam) return ref.awayTeam;
+    if (winner === ref.awayTeam) return ref.homeTeam;
+    return name;
+  }
+
+  // "3º Grupo A/B/C/..." — mejor tercero de ese slot
+  if (/^3º\s*Grupo\s*[A-L/]+$/i.test(name)) {
+    const thirdIndex = THIRD_PLACE_MATCH_MAPPING[matchId];
+    if (thirdIndex === undefined) return name;
+
+    const allGroupMatches = await prisma.match.findMany({ where: { phase: 'Group' } });
+    if (!allGroupMatches.every(m => m.isFinished)) return name;
+
+    const groupsByLetter: Record<string, typeof allGroupMatches> = {};
+    allGroupMatches.forEach(m => {
+      if (m.group) {
+        if (!groupsByLetter[m.group]) groupsByLetter[m.group] = [];
+        groupsByLetter[m.group].push(m);
+      }
+    });
+
+    type ThirdEntry = { team: string; group: string; points: number; gd: number; gf: number };
+    const thirds: ThirdEntry[] = [];
+    for (const [letter, gMatches] of Object.entries(groupsByLetter)) {
+      const third = computeRealGroupStandings(gMatches)[2];
+      if (third) thirds.push({ team: third.team, group: letter, points: third.points, gd: third.gd, gf: third.gf });
+    }
+
+    const sorted = [...thirds]
+      .sort((a, b) => b.points - a.points || b.gd - a.gd || b.gf - a.gf)
+      .slice(0, 8);
+
+    const groupLetters = sorted.map(t => t.group).sort().join('');
+    const order = bestThirdsCombinations[groupLetters as keyof typeof bestThirdsCombinations];
+    if (!order) return sorted[thirdIndex]?.team ?? name;
+
+    const ordered = order.map(g => sorted.find(t => t.group === g)).filter(Boolean) as ThirdEntry[];
+    return ordered[thirdIndex]?.team ?? name;
+  }
+
+  return name;
+}
+
+// Resuelve y persiste los nombres de equipo de un partido eliminatorio si siguen siendo placeholders.
+// Llamar ANTES de calcular puntos cuando un partido se marca como finalizado.
+export async function resolveAndUpdateMatchTeams(matchId: number): Promise<void> {
+  const match = await prisma.match.findUnique({ where: { id: matchId } });
+  if (!match || match.phase === 'Group') return;
+
+  const needsHome = isPlaceholder(match.homeTeam);
+  const needsAway = isPlaceholder(match.awayTeam);
+  if (!needsHome && !needsAway) return;
+
+  const resolvedHome = needsHome ? await resolveTeamNameFromDB(match.homeTeam, matchId) : match.homeTeam;
+  const resolvedAway = needsAway ? await resolveTeamNameFromDB(match.awayTeam, matchId) : match.awayTeam;
+
+  if (resolvedHome !== match.homeTeam || resolvedAway !== match.awayTeam) {
+    await prisma.match.update({
+      where: { id: matchId },
+      data: { homeTeam: resolvedHome, awayTeam: resolvedAway },
+    });
+  }
+}
 
 // Cuando se sepa el pichichi, pon el nombre aquí (exactamente igual que lo escriben los participantes)
 // Ejemplo: const ACTUAL_PICHICHI = "Kylian Mbappé";
