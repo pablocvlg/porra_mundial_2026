@@ -110,6 +110,7 @@ function calculateStats(entry: Entry) {
   let finishedGroupMatches = 0;
   let correct1X2 = 0;
   let exactMatches = 0;
+  let exactScoreExtraPoints = 0;
   let groupMatchPoints = 0;
   let maxGroupMatchPoints = 0;
 
@@ -126,7 +127,9 @@ function calculateStats(entry: Entry) {
     if (predW === matchW) { correct1X2++; groupMatchPoints += 3; }
     if (pred.homeGoals === m.homeGoals && pred.awayGoals === m.awayGoals) {
       exactMatches++;
-      groupMatchPoints += 2 + Math.max(0, totalGoals - 2);
+      const extra = Math.max(0, totalGoals - 2);
+      exactScoreExtraPoints += extra;
+      groupMatchPoints += 2 + extra;
     }
   }
 
@@ -265,7 +268,7 @@ function calculateStats(entry: Entry) {
   return {
     // Grupos partidos
     finishedGroupMatches, totalGroupMatches: groupPreds.length,
-    correct1X2, exactMatches, groupMatchPoints, maxGroupMatchPoints,
+    correct1X2, exactMatches, exactScoreExtraPoints, groupMatchPoints, maxGroupMatchPoints,
     // Clasificación
     finishedGroups, totalGroups,
     qualifiedWithPos, qualifiedNoPos, qualificationPoints, maxQualificationPoints,
@@ -439,7 +442,9 @@ export default function PorraStatusPage() {
                                       />
                                       <DesgloseFila
                                         label="Resultados exactos"
-                                        value={`${stats.exactMatches}/${stats.finishedGroupMatches}`}
+                                        value={stats.exactScoreExtraPoints > 0
+                                          ? `${stats.exactMatches}/${stats.finishedGroupMatches} · incl. ${stats.exactScoreExtraPoints} pts extra por goles`
+                                          : `${stats.exactMatches}/${stats.finishedGroupMatches}`}
                                         pts={stats.groupMatchPoints - stats.correct1X2 * 3}
                                         color="text-green-300"
                                       />
