@@ -353,7 +353,9 @@ export default function PorraStatusPage() {
       "Round of 32":   "Dieciseisavos de final",
       "Round of 16":   "Octavos de final",
       "Quarter-final": "Cuartos de final",
+      "Quarterfinal":  "Cuartos de final",
       "Semi-final":    "Semifinales",
+      "Semifinal":     "Semifinales",
       "Final":         "Final",
       "Third Place":   "3er y 4º puesto",
     };
@@ -629,7 +631,7 @@ export default function PorraStatusPage() {
                   <div className="max-h-[600px] overflow-y-auto">
                     {Object.entries(groupPredictionsByPhase(selectedEntry.predictions)).map(([phase, preds]) => (
                       <div key={phase} className="mb-4">
-                        <h3 className="text-sm font-semibold mb-2 text-blue-400 border-b border-gray-700 pb-1 sticky top-0 bg-gray-900/95 backdrop-blur-sm">
+                        <h3 className="text-sm font-semibold mb-2 text-blue-400 border-b border-gray-700 pb-1 sticky top-0">
                           {translatePhase(phase)}
                         </h3>
                         <div className="space-y-1">
