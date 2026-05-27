@@ -497,26 +497,18 @@ export default function PorraStatusPage() {
                                           />
                                         );
                                       })}
-                                      {(stats.cruce1x2Bonus > 0 || stats.cruceExactBonus > 0) && (
-                                        <>
-                                          {stats.cruce1x2Bonus > 0 && (
-                                            <DesgloseFila
-                                              label="Bonus cruce exacto · 1X2 acertado"
-                                              value={`${stats.cruce1x2Bonus} partidos`}
-                                              pts={stats.cruce1x2Bonus}
-                                              color="text-orange-300"
-                                            />
-                                          )}
-                                          {stats.cruceExactBonus > 0 && (
-                                            <DesgloseFila
-                                              label="Bonus cruce exacto · resultado exacto"
-                                              value={`${stats.cruceExactBonus} partidos`}
-                                              pts={stats.cruceExactBonus}
-                                              color="text-orange-300"
-                                            />
-                                          )}
-                                        </>
-                                      )}
+                                      <DesgloseFila
+                                        label="Bonus cruce exacto · 1X2 acertado"
+                                        value={`${stats.cruce1x2Bonus} partidos`}
+                                        pts={stats.cruce1x2Bonus}
+                                        color={stats.cruce1x2Bonus > 0 ? "text-orange-300" : "text-gray-500"}
+                                      />
+                                      <DesgloseFila
+                                        label="Bonus cruce exacto · resultado exacto"
+                                        value={`${stats.cruceExactBonus} partidos`}
+                                        pts={stats.cruceExactBonus}
+                                        color={stats.cruceExactBonus > 0 ? "text-orange-300" : "text-gray-500"}
+                                      />
                                     </DesgloseSeccion>
                                   )}
 
