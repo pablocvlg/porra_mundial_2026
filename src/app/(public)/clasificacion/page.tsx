@@ -18,6 +18,9 @@ type Prediction = {
   matchId: number;
   homeGoals: number;
   awayGoals: number;
+  homeTeam?: string | null;
+  awayTeam?: string | null;
+  penaltyWinner?: string | null;
   match: Match;
 };
 
@@ -177,7 +180,9 @@ export default function PorraStatusPage() {
     }
 
     const qualificationPoints = (qualifiedTeams * 4) + (qualifiedWithPosition * 7);
-    return { exactMatches, correctWinner, exactMatchPoints, qualifiedTeams, qualifiedWithPosition, qualificationPoints };
+    const groupMatchPoints = (correctWinner * 3) + exactMatchPoints;
+    const totalCalculado = groupMatchPoints + qualificationPoints;
+    return { exactMatches, correctWinner, exactMatchPoints, qualifiedTeams, qualifiedWithPosition, qualificationPoints, groupMatchPoints, totalCalculado };
   };
 
   const calculateGroupStandings = (
@@ -342,8 +347,9 @@ export default function PorraStatusPage() {
                                       </div>
                                     </div>
                                   </div>
-                                  <div>
-                                    <h4 className="font-semibold text-gray-400 mb-1 uppercase tracking-wide">Brackets</h4>
+                                  <div className="flex justify-between items-center p-2 bg-gray-900/60 border border-gray-600 rounded mt-1">
+                                    <span className="font-bold text-white">Total grupos calculado:</span>
+                                    <span className="font-bold text-orange-400 pr-4">{stats.totalCalculado} pt.</span>
                                   </div>
                                   <button
                                     onClick={(e) => {
@@ -432,13 +438,13 @@ export default function PorraStatusPage() {
                                 }`}
                               >
                                 <div className="flex items-center space-x-2 flex-1">
-                                  <span className="w-2/5 text-right">{pred.match.homeTeam}</span>
+                                  <span className="w-2/5 text-right">{pred.homeTeam ?? pred.match.homeTeam}</span>
                                   <div className="flex items-center space-x-1 font-bold bg-gray-900 px-2 py-0.5 rounded">
                                     <span className="w-5 text-center">{pred.homeGoals}</span>
                                     <span className="text-gray-500">-</span>
                                     <span className="w-5 text-center">{pred.awayGoals}</span>
                                   </div>
-                                  <span className="w-2/5">{pred.match.awayTeam}</span>
+                                  <span className="w-2/5">{pred.awayTeam ?? pred.match.awayTeam}</span>
                                 </div>
 
                                 {isFinished && (
