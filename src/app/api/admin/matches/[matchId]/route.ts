@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '../../../../../../lib/prisma';
-import { updateAllPorraPoints } from '../../../../../../lib/points';
+import { updateAllPorraPoints, resolveAndUpdateMatchTeams } from '../../../../../../lib/points';
 
 export async function PATCH(
   request: Request,
@@ -35,8 +35,11 @@ export async function PATCH(
 
     let pointsRecalculated = false;
 
-    // Si el partido está finalizado, recalcular puntos
+    // Si el partido está finalizado, resolver nombres de equipo y recalcular puntos
     if (isFinished) {
+      // Resuelve placeholders ("1º Grupo A", "Ganador Partido 73"...) con los resultados reales
+      await resolveAndUpdateMatchTeams(matchId);
+
       const predictions = await prisma.prediction.findMany({
         where: { matchId },
         include: { entry: true }
