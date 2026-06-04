@@ -777,7 +777,7 @@ export default function PorraPage() {
                 <div className="flex justify-between gap-2 min-w-[1100px] h-[700px]">
                   {/* Round of 32 - Izquierda */}
                   <div className="flex flex-col justify-around w-36">
-                    <div className="text-center text-xs font-semibold text-blue-400 mb-1">Round of 32</div>
+                    <div className="text-center text-xs font-semibold text-blue-400 mb-1">Dieciseisavos de final</div>
                     <div className="flex flex-col justify-around flex-1">
                       {groupedMatches.knockout
                         .filter(m => m.phase === "Round of 32")
@@ -788,7 +788,7 @@ export default function PorraPage() {
 
                   {/* Round of 16 - Izquierda */}
                   <div className="flex flex-col justify-around w-36">
-                    <div className="text-center text-xs font-semibold text-blue-400 mb-1">Round of 16</div>
+                    <div className="text-center text-xs font-semibold text-blue-400 mb-1">Octavos de final</div>
                     <div className="flex flex-col justify-around flex-1">
                       {groupedMatches.knockout
                         .filter(m => m.phase === "Round of 16")
@@ -799,7 +799,7 @@ export default function PorraPage() {
 
                   {/* Quarter-final - Izquierda */}
                   <div className="flex flex-col justify-around w-36">
-                    <div className="text-center text-xs font-semibold text-blue-400 mb-1">Quarter-final</div>
+                    <div className="text-center text-xs font-semibold text-blue-400 mb-1">Cuartos de final</div>
                     <div className="flex flex-col justify-around flex-1">
                       {groupedMatches.knockout
                         .filter(m => m.phase === "Quarterfinal" || m.phase === "Quarter-final")
@@ -810,7 +810,7 @@ export default function PorraPage() {
 
                   {/* Semi-final - Izquierda */}
                   <div className="flex flex-col justify-around w-36">
-                    <div className="text-center text-xs font-semibold text-blue-400 mb-1">Semi-final</div>
+                    <div className="text-center text-xs font-semibold text-blue-400 mb-1">Semifinal</div>
                     <div className="flex flex-col justify-around flex-1">
                       {groupedMatches.knockout
                         .filter(m => m.phase === "Semifinal" || m.phase === "Semi-final")
@@ -821,7 +821,7 @@ export default function PorraPage() {
 
                   {/* Final y Tercer Puesto */}
                   <div className="flex flex-col justify-center w-44">
-                    <div className="text-center text-base font-bold text-yellow-400 mb-2">FINAL</div>
+                    <div className="text-center text-base font-bold text-yellow-400 mb-3">FINAL</div>
                     {(() => {
                       const finalMatch = groupedMatches.knockout.find(m => m.phase === "Final");
                       if (!finalMatch) return null;
