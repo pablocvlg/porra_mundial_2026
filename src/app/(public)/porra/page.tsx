@@ -872,7 +872,7 @@ export default function PorraPage() {
 
                   {/* Semi-final - Derecha */}
                   <div className="flex flex-col justify-around w-36">
-                    <div className="text-center text-xs font-semibold text-blue-400 mb-1">Semi-final</div>
+                    <div className="text-center text-xs font-semibold text-blue-400 mb-1">Semifinal</div>
                     <div className="flex flex-col justify-around flex-1">
                       {groupedMatches.knockout
                         .filter(m => m.phase === "Semifinal" || m.phase === "Semi-final")
@@ -883,7 +883,7 @@ export default function PorraPage() {
 
                   {/* Quarter-final - Derecha */}
                   <div className="flex flex-col justify-around w-36">
-                    <div className="text-center text-xs font-semibold text-blue-400 mb-1">Quarter-final</div>
+                    <div className="text-center text-xs font-semibold text-blue-400 mb-1">Cuartos de final</div>
                     <div className="flex flex-col justify-around flex-1">
                       {groupedMatches.knockout
                         .filter(m => m.phase === "Quarterfinal" || m.phase === "Quarter-final")
@@ -894,7 +894,7 @@ export default function PorraPage() {
 
                   {/* Round of 16 - Derecha */}
                   <div className="flex flex-col justify-around w-36">
-                    <div className="text-center text-xs font-semibold text-blue-400 mb-1">Round of 16</div>
+                    <div className="text-center text-xs font-semibold text-blue-400 mb-1">Octavos de final</div>
                     <div className="flex flex-col justify-around flex-1">
                       {groupedMatches.knockout
                         .filter(m => m.phase === "Round of 16")
@@ -905,7 +905,7 @@ export default function PorraPage() {
 
                   {/* Round of 32 - Derecha */}
                   <div className="flex flex-col justify-around w-36">
-                    <div className="text-center text-xs font-semibold text-blue-400 mb-1">Round of 32</div>
+                    <div className="text-center text-xs font-semibold text-blue-400 mb-1">Dieciseisavos de final</div>
                     <div className="flex flex-col justify-around flex-1">
                       {groupedMatches.knockout
                         .filter(m => m.phase === "Round of 32")
