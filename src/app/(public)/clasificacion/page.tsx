@@ -668,50 +668,47 @@ export default function PorraStatusPage() {
                               }`}>
                                 {isGroup ? (
                                   // Fase de grupos: mostrar marcador
-                                  <div className="flex items-center space-x-2 flex-1">
-                                    <span className="w-2/5 text-right">{predHome}</span>
-                                    <div className="flex items-center space-x-1 font-bold bg-gray-900 px-2 py-0.5 rounded">
+                                  <div className="flex items-center space-x-2 flex-1 justify-end pr-8">
+                                    <span className="w-24 text-right">{predHome}</span>
+                                    <div className="flex items-center space-x-1 font-bold bg-gray-900 px-2 py-0.5 rounded flex-shrink-0">
                                       <span className="w-5 text-center">{pred.homeGoals}</span>
                                       <span className="text-gray-500">-</span>
                                       <span className="w-5 text-center">{pred.awayGoals}</span>
                                     </div>
-                                    <span className="w-2/5">{predAway}</span>
+                                    <span className="w-24">{predAway}</span>
                                   </div>
                                 ) : (
-                                  // Eliminatorias: mismo formato que grupos, ganador resaltado
-                                  <div className="flex items-center space-x-2 flex-1">
-                                    <span className={`w-2/5 text-right ${predWinner === predHome ? "font-bold text-white" : "text-gray-500"}`}>
-                                      {predHome}
+                                  // Eliminatorias: ambos equipos, ganador en dorado y negrita
+                                  <div className="flex items-center flex-1 gap-1 justify-end pr-16">
+                                    <span className={`w-24 text-right ${predWinner === predHome ? "font-bold text-yellow-400" : "text-gray-500"}`}>
+                                      {predIsPen && predWinner === predHome && <span className="text-yellow-400 font-bold mr-1">(P)</span>}{predHome}
                                     </span>
-                                    <div className="flex items-center justify-center bg-gray-900 px-2 py-0.5 rounded min-w-[2.5rem]">
-                                      {predIsPen
-                                        ? <span className="text-gray-400 text-xs font-normal">pen.</span>
-                                        : <span className="text-gray-500 font-bold">-</span>
-                                      }
-                                    </div>
-                                    <span className={`w-2/5 ${predWinner === predAway ? "font-bold text-white" : "text-gray-500"}`}>
-                                      {predAway}
+                                    <span className="text-gray-600 flex-shrink-0">-</span>
+                                    <span className={`w-24 ${predWinner === predAway ? "font-bold text-yellow-400" : "text-gray-500"}`}>
+                                      {predAway}{predIsPen && predWinner === predAway && <span className="text-yellow-400 font-bold ml-1">(P)</span>}
                                     </span>
                                   </div>
                                 )}
-                                {isFinished && (
-                                  <div className="ml-2 flex items-center gap-1">
-                                    {isGroup ? (
-                                      <div className="text-xs bg-gray-800 border border-gray-600 px-1.5 py-0.5 rounded">
-                                        <span className="text-gray-300 font-semibold">{m.homeGoals}-{m.awayGoals}</span>
-                                      </div>
-                                    ) : (
-                                      <div className="text-xs bg-gray-800 border border-gray-600 px-1.5 py-0.5 rounded flex items-center gap-1">
-                                        <span className={actualWinner === m.homeTeam ? "font-bold text-white" : "text-gray-500"}>{m.homeTeam}</span>
-                                        <span className="text-gray-500">{actualIsPen ? "pen." : "-"}</span>
-                                        <span className={actualWinner === m.awayTeam ? "font-bold text-white" : "text-gray-500"}>{m.awayTeam}</span>
-                                      </div>
-                                    )}
-                                    {isExact && <span className="text-blue-400 font-bold">🏆</span>}
-                                    {isCorrectWinner && <span className="text-green-400 font-bold">✓</span>}
-                                    {isFailed && <span className="text-red-400 font-bold">✗</span>}
-                                  </div>
-                                )}
+                                <div className="ml-2 flex-shrink-0 w-28 flex items-center justify-end gap-1">
+                                  {isFinished && (
+                                    <>
+                                      {isGroup ? (
+                                        <div className="text-xs bg-gray-800 border border-gray-600 px-1.5 py-0.5 rounded">
+                                          <span className="text-gray-300 font-semibold">{m.homeGoals}-{m.awayGoals}</span>
+                                        </div>
+                                      ) : (
+                                        <div className="text-xs bg-gray-800 border border-gray-600 px-1.5 py-0.5 rounded max-w-[80px] truncate">
+                                          <span className="font-semibold text-gray-300">
+                                            {actualWinner ?? "—"}{actualIsPen && <span className="text-gray-400 font-normal ml-1">(P)</span>}
+                                          </span>
+                                        </div>
+                                      )}
+                                      {isExact && <span className="text-blue-400 font-bold">🏆</span>}
+                                      {isCorrectWinner && <span className="text-green-400 font-bold">✓</span>}
+                                      {isFailed && <span className="text-red-400 font-bold">✗</span>}
+                                    </>
+                                  )}
+                                </div>
                               </div>
                             );
                           })}
