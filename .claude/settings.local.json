@@ -4,7 +4,12 @@
       "Bash(npx tsc *)",
       "Bash(git checkout *)",
       "Bash(git merge *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(Get-ChildItem -Path \"e:\\\\Projects\\\\Porra Mundial 2026\" -Recurse -File -Include \"*.ts\",\"*.sql\",\"*.json\",\"seed*\")",
+      "Bash(Select-Object -First 50)",
+      "Bash(Format-Table FullName)",
+      "Bash(node -e ' *)",
+      "Bash(npx prisma *)"
     ]
   }
 }

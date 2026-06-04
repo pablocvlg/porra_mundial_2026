@@ -209,7 +209,6 @@ function calculateStats(entry: Entry) {
   });
 
   let cruce1x2Bonus = 0;
-  let cruceExactBonus = 0;
   let knockoutPoints = 0;
   let maxKnockoutPoints = 0;
   let bothFinalists = false;
@@ -239,24 +238,19 @@ function calculateStats(entry: Entry) {
     const phaseData = knockoutByPhase[phase];
     if (!phaseData) continue;
     phaseData.finished++;
-    maxKnockoutPoints += phaseData.advPts + 2; // avance + max bonus cruce
+    maxKnockoutPoints += phaseData.advPts + 1; // avance + max bonus cruce (solo 1X2)
 
     if (predictedWinner && predictedWinner === actualWinner) {
       phaseData.correct++;
       knockoutPoints += phaseData.advPts;
     }
 
-    // Bonus por cruce exacto
+    // Bonus por cruce exacto (solo 1X2)
     const normalOrder = pred.homeTeam === m.homeTeam && pred.awayTeam === m.awayTeam;
     const reverseOrder = pred.homeTeam === m.awayTeam && pred.awayTeam === m.homeTeam;
     if (normalOrder || reverseOrder) {
       if (predictedWinner && predictedWinner === actualWinner) {
         cruce1x2Bonus++; knockoutPoints++;
-      }
-      const predH = normalOrder ? pred.homeGoals : pred.awayGoals;
-      const predA = normalOrder ? pred.awayGoals : pred.homeGoals;
-      if (predH === m.homeGoals && predA === m.awayGoals) {
-        cruceExactBonus++; knockoutPoints++;
       }
     }
   }
@@ -275,7 +269,7 @@ function calculateStats(entry: Entry) {
     // Mejores terceros
     allGroupsDone, bestThirdWithPos, bestThirdNoPos, bestThirdPoints, maxBestThirdPoints,
     // Eliminatorias
-    knockoutByPhase, cruce1x2Bonus, cruceExactBonus, knockoutPoints, maxKnockoutPoints,
+    knockoutByPhase, cruce1x2Bonus, knockoutPoints, maxKnockoutPoints,
     // Final
     bothFinalists, championCorrect, finalPoints, finalDone, maxFinalPoints,
     // Totales
@@ -523,12 +517,6 @@ export default function PorraStatusPage() {
                                         pts={stats.cruce1x2Bonus}
                                         color={stats.cruce1x2Bonus > 0 ? "text-orange-300" : "text-gray-500"}
                                       />
-                                      <DesgloseFila
-                                        label="Bonus cruce exacto · resultado exacto"
-                                        value={`${stats.cruceExactBonus} partidos`}
-                                        pts={stats.cruceExactBonus}
-                                        color={stats.cruceExactBonus > 0 ? "text-orange-300" : "text-gray-500"}
-                                      />
                                     </DesgloseSeccion>
                                   )}
 
@@ -637,15 +625,40 @@ export default function PorraStatusPage() {
                         <div className="space-y-1">
                           {preds.map(pred => {
                             const m = pred.match;
+                            const isGroup = m.phase === "Group";
                             const isFinished = m.isFinished && m.homeGoals != null && m.awayGoals != null;
+
+                            // Lógica común: ganador predicho y real
+                            const predHome = pred.homeTeam ?? m.homeTeam;
+                            const predAway = pred.awayTeam ?? m.awayTeam;
+                            const predWinner = pred.homeGoals > pred.awayGoals ? predHome
+                              : pred.awayGoals > pred.homeGoals ? predAway
+                              : pred.penaltyWinner === "home" ? predHome
+                              : pred.penaltyWinner === "away" ? predAway
+                              : null;
+                            const predIsPen = pred.homeGoals === pred.awayGoals && pred.penaltyWinner != null;
+
                             let isExact = false, isCorrectWinner = false, isFailed = false;
+                            let actualWinner: string | null = null;
+                            let actualIsPen = false;
                             if (isFinished) {
-                              isExact = pred.homeGoals === m.homeGoals && pred.awayGoals === m.awayGoals;
-                              const predW = pred.homeGoals > pred.awayGoals ? "h" : pred.awayGoals > pred.homeGoals ? "a" : "d";
-                              const matchW = m.homeGoals! > m.awayGoals! ? "h" : m.awayGoals! > m.homeGoals! ? "a" : "d";
-                              if (!isExact && predW === matchW) isCorrectWinner = true;
-                              if (!isExact && !isCorrectWinner) isFailed = true;
+                              const hg = m.homeGoals!; const ag = m.awayGoals!;
+                              actualWinner = hg > ag ? m.homeTeam : ag > hg ? m.awayTeam
+                                : m.penaltyWinner === "home" ? m.homeTeam
+                                : m.penaltyWinner === "away" ? m.awayTeam : null;
+                              actualIsPen = hg === ag && m.penaltyWinner != null;
+                              if (isGroup) {
+                                isExact = pred.homeGoals === hg && pred.awayGoals === ag;
+                                const predW = pred.homeGoals > pred.awayGoals ? "h" : pred.awayGoals > pred.homeGoals ? "a" : "d";
+                                const matchW = hg > ag ? "h" : ag > hg ? "a" : "d";
+                                if (!isExact && predW === matchW) isCorrectWinner = true;
+                                if (!isExact && !isCorrectWinner) isFailed = true;
+                              } else {
+                                isCorrectWinner = predWinner != null && predWinner === actualWinner;
+                                isFailed = !isCorrectWinner;
+                              }
                             }
+
                             return (
                               <div key={pred.id} className={`flex items-center justify-between p-2 rounded text-xs transition ${
                                 isExact ? "bg-blue-900/30 border border-blue-700"
@@ -653,20 +666,41 @@ export default function PorraStatusPage() {
                                 : isFailed ? "bg-red-900/20 border border-red-900/50"
                                 : "bg-gray-800 border border-gray-700"
                               }`}>
-                                <div className="flex items-center space-x-2 flex-1">
-                                  <span className="w-2/5 text-right">{pred.homeTeam ?? m.homeTeam}</span>
-                                  <div className="flex items-center space-x-1 font-bold bg-gray-900 px-2 py-0.5 rounded">
-                                    <span className="w-5 text-center">{pred.homeGoals}</span>
-                                    <span className="text-gray-500">-</span>
-                                    <span className="w-5 text-center">{pred.awayGoals}</span>
+                                {isGroup ? (
+                                  // Fase de grupos: mostrar marcador
+                                  <div className="flex items-center space-x-2 flex-1">
+                                    <span className="w-2/5 text-right">{predHome}</span>
+                                    <div className="flex items-center space-x-1 font-bold bg-gray-900 px-2 py-0.5 rounded">
+                                      <span className="w-5 text-center">{pred.homeGoals}</span>
+                                      <span className="text-gray-500">-</span>
+                                      <span className="w-5 text-center">{pred.awayGoals}</span>
+                                    </div>
+                                    <span className="w-2/5">{predAway}</span>
                                   </div>
-                                  <span className="w-2/5">{pred.awayTeam ?? m.awayTeam}</span>
-                                </div>
+                                ) : (
+                                  // Eliminatorias: mostrar ganador
+                                  <div className="flex items-center gap-1.5 flex-1">
+                                    <span className="text-gray-400">Gana:</span>
+                                    <span className="font-semibold">
+                                      {predWinner ?? "—"}
+                                      {predIsPen && <span className="text-gray-400 ml-1 font-normal">(pen.)</span>}
+                                    </span>
+                                  </div>
+                                )}
                                 {isFinished && (
                                   <div className="ml-2 flex items-center gap-1">
-                                    <div className="text-xs bg-gray-800 border border-gray-600 px-1.5 py-0.5 rounded">
-                                      <span className="text-gray-300 font-semibold">{m.homeGoals}-{m.awayGoals}</span>
-                                    </div>
+                                    {isGroup ? (
+                                      <div className="text-xs bg-gray-800 border border-gray-600 px-1.5 py-0.5 rounded">
+                                        <span className="text-gray-300 font-semibold">{m.homeGoals}-{m.awayGoals}</span>
+                                      </div>
+                                    ) : (
+                                      <div className="text-xs bg-gray-800 border border-gray-600 px-1.5 py-0.5 rounded">
+                                        <span className="text-gray-300 font-semibold">
+                                          {actualWinner ?? "—"}
+                                          {actualIsPen && <span className="text-gray-400 ml-1 font-normal">(pen.)</span>}
+                                        </span>
+                                      </div>
+                                    )}
                                     {isExact && <span className="text-blue-400 font-bold">🏆</span>}
                                     {isCorrectWinner && <span className="text-green-400 font-bold">✓</span>}
                                     {isFailed && <span className="text-red-400 font-bold">✗</span>}

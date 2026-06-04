@@ -66,11 +66,6 @@ export default function ReglasButton() {
             <span className="text-red-400 font-bold">+1 punto extra</span> por acertar {" "}
             <span className="font-semibold">1X2</span>
           </li>
-          <li>
-            <span className="text-red-400 font-bold">+1 punto extra</span> por acertar el{" "}
-            <span className="font-semibold">resultado exacto</span>{" "}
-            (sin contar penaltis)
-          </li>
         </ul>
       </li>
 

@@ -152,7 +152,6 @@ const POINTS = {
     SEMIFINAL_ADVANCE: 8,         // pasa a la final
     THIRD_PLACE: 3,               // gana partido de 3er puesto
     CRUCE_1X2_BONUS: 1,           // bonus cruce exacto + acertar ganador
-    CRUCE_EXACT_SCORE_BONUS: 1,   // bonus cruce exacto + acertar marcador exacto
   },
   FINAL: {
     BOTH_FINALISTS: 4,    // acertar los dos finalistas
@@ -354,12 +353,6 @@ function calculateKnockoutMatchPoints(prediction: Prediction, match: Match): num
       points += POINTS.KNOCKOUT.CRUCE_1X2_BONUS;
     }
 
-    // +1 por acertar el marcador exacto (sin contar penaltis)
-    const predH = normalOrder ? prediction.homeGoals : prediction.awayGoals;
-    const predA = normalOrder ? prediction.awayGoals : prediction.homeGoals;
-    if (predH === match.homeGoals && predA === match.awayGoals) {
-      points += POINTS.KNOCKOUT.CRUCE_EXACT_SCORE_BONUS;
-    }
   }
 
   return points;
