@@ -369,7 +369,7 @@ export default function PorraStatusPage() {
   const selectedEntry = porraData?.allEntries.find(e => e.id === selectedParticipantId);
 
   return (
-    <div className="min-h-screen bg-black bg-no-repeat bg-center text-white pt-14"
+    <div className="min-h-screen bg-black bg-fixed bg-no-repeat bg-center text-white pt-14"
       style={{ backgroundImage: `url('/background.avif')` }}>
       <div className="max-w-7xl mx-auto p-4">
         <h1 className="text-xl font-bold mb-4">Clasificación</h1>
@@ -392,7 +392,7 @@ export default function PorraStatusPage() {
         </div>
 
         {porraData && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
 
             {/* ── Clasificación ── */}
             <div className="bg-gray-900/80 backdrop-blur-md rounded-lg shadow-md p-4 border border-gray-800/50">
@@ -592,7 +592,7 @@ export default function PorraStatusPage() {
             </div>
 
             {/* ── Predicciones ── */}
-            <div className="bg-gray-900/80 backdrop-blur-md rounded-lg shadow-md p-4 border border-gray-800/50">
+            <div className="bg-gray-900/80 backdrop-blur-md rounded-lg shadow-md p-4 border border-gray-800/50 lg:sticky lg:top-18">
               <div className="mb-3">
                 <label className="block font-semibold mb-2 text-sm">Ver predicciones de:</label>
                 <select
@@ -678,12 +678,19 @@ export default function PorraStatusPage() {
                                     <span className="w-2/5">{predAway}</span>
                                   </div>
                                 ) : (
-                                  // Eliminatorias: mostrar ganador
-                                  <div className="flex items-center gap-1.5 flex-1">
-                                    <span className="text-gray-400">Gana:</span>
-                                    <span className="font-semibold">
-                                      {predWinner ?? "—"}
-                                      {predIsPen && <span className="text-gray-400 ml-1 font-normal">(pen.)</span>}
+                                  // Eliminatorias: mismo formato que grupos, ganador resaltado
+                                  <div className="flex items-center space-x-2 flex-1">
+                                    <span className={`w-2/5 text-right ${predWinner === predHome ? "font-bold text-white" : "text-gray-500"}`}>
+                                      {predHome}
+                                    </span>
+                                    <div className="flex items-center justify-center bg-gray-900 px-2 py-0.5 rounded min-w-[2.5rem]">
+                                      {predIsPen
+                                        ? <span className="text-gray-400 text-xs font-normal">pen.</span>
+                                        : <span className="text-gray-500 font-bold">-</span>
+                                      }
+                                    </div>
+                                    <span className={`w-2/5 ${predWinner === predAway ? "font-bold text-white" : "text-gray-500"}`}>
+                                      {predAway}
                                     </span>
                                   </div>
                                 )}
@@ -694,11 +701,10 @@ export default function PorraStatusPage() {
                                         <span className="text-gray-300 font-semibold">{m.homeGoals}-{m.awayGoals}</span>
                                       </div>
                                     ) : (
-                                      <div className="text-xs bg-gray-800 border border-gray-600 px-1.5 py-0.5 rounded">
-                                        <span className="text-gray-300 font-semibold">
-                                          {actualWinner ?? "—"}
-                                          {actualIsPen && <span className="text-gray-400 ml-1 font-normal">(pen.)</span>}
-                                        </span>
+                                      <div className="text-xs bg-gray-800 border border-gray-600 px-1.5 py-0.5 rounded flex items-center gap-1">
+                                        <span className={actualWinner === m.homeTeam ? "font-bold text-white" : "text-gray-500"}>{m.homeTeam}</span>
+                                        <span className="text-gray-500">{actualIsPen ? "pen." : "-"}</span>
+                                        <span className={actualWinner === m.awayTeam ? "font-bold text-white" : "text-gray-500"}>{m.awayTeam}</span>
                                       </div>
                                     )}
                                     {isExact && <span className="text-blue-400 font-bold">🏆</span>}
