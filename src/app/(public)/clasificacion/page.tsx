@@ -411,7 +411,7 @@ export default function PorraStatusPage() {
               <div className="flex-1 min-w-0">
                 <h2 className="font-bold mb-3 text-base">Crónicas</h2>
                 {cronicas.length === 0 ? (
-                  <p className="text-gray-500 text-sm">No hay crónicas publicadas aún.</p>
+                  <p className="text-white-500 text-sm">No hay crónicas publicadas aún.</p>
                 ) : (
                   <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
                     {cronicas.map(c => (
