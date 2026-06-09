@@ -40,6 +40,13 @@ type PorraStatusResponse = {
   allEntries: Entry[];
 };
 
+type Cronica = {
+  id: number;
+  title: string | null;
+  content: string;
+  createdAt: string;
+};
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function getMatchWinner(
@@ -318,6 +325,7 @@ export default function PorraStatusPage() {
   const [error, setError] = useState("");
   const [selectedParticipantId, setSelectedParticipantId] = useState<number | null>(null);
   const [expandedRowId, setExpandedRowId] = useState<number | null>(null);
+  const [cronicas, setCronicas] = useState<Cronica[]>([]);
 
   useEffect(() => {
     fetch("/api/porras")
@@ -327,13 +335,18 @@ export default function PorraStatusPage() {
 
   const handleSearch = async (name: string) => {
     if (!name) { setPorraData(null); return; }
-    setLoading(true); setError(""); setPorraData(null);
+    setLoading(true); setError(""); setPorraData(null); setCronicas([]);
     setSelectedParticipantId(null); setExpandedRowId(null);
     try {
       const res = await fetch(`/api/porra-status?${new URLSearchParams({ porraName: name })}`);
       const data = await res.json();
-      if (res.ok) setPorraData(data);
-      else setError(data.error || "Error al cargar la porra");
+      if (res.ok) {
+        setPorraData(data);
+        const cronicasRes = await fetch(`/api/admin/cronicas?porraId=${data.porra.id}`);
+        if (cronicasRes.ok) setCronicas(await cronicasRes.json());
+      } else {
+        setError(data.error || "Error al cargar la porra");
+      }
     } catch { setError("Error al conectar con el servidor"); }
     finally { setLoading(false); }
   };
@@ -374,31 +387,60 @@ export default function PorraStatusPage() {
       <div className="max-w-7xl mx-auto p-4">
         <h1 className="text-xl font-bold mb-4">Clasificación</h1>
 
-        {/* Selector */}
+        {/* Selector (+ Crónicas cuando hay porra seleccionada) */}
         <div className="bg-gray-900/50 backdrop-blur-md border border-gray-800/50 rounded-lg p-4 mb-4">
-          <div className="flex flex-col items-center">
-            <label className="block font-semibold mb-1 text-sm w-4/5 md:w-1/3">Nombre de la porra:</label>
-            <select
-              className="border border-gray-700 bg-gray-800 text-white p-2 w-4/5 md:w-1/3 rounded text-sm focus:outline-none focus:border-blue-500"
-              value={porraName}
-              onChange={e => handleSelectChange(e.target.value)}
-            >
-              <option value="">-- Selecciona una porra --</option>
-              {porraOptions.map(name => <option key={name} value={name}>{name}</option>)}
-            </select>
+          <div className={porraName ? "flex flex-col lg:flex-row lg:items-start gap-6" : "flex flex-col items-center"}>
+
+            {/* Selector */}
+            <div className={porraName ? "lg:w-72 shrink-0" : "w-4/5 md:w-1/3"}>
+              <label className="block font-semibold mb-3 text-sm">Nombre de la porra:</label>
+              <select
+                className="border border-gray-700 bg-gray-800 text-white p-2 w-full rounded text-sm focus:outline-none focus:border-blue-500"
+                value={porraName}
+                onChange={e => handleSelectChange(e.target.value)}
+              >
+                <option value="">-- Selecciona una porra --</option>
+                {porraOptions.map(name => <option key={name} value={name}>{name}</option>)}
+              </select>
+              {error && <div className="mt-3 bg-red-900/50 border border-red-700 text-red-200 p-2 rounded text-sm">{error}</div>}
+              {loading && <p className="text-gray-400 text-sm mt-3">Cargando...</p>}
+            </div>
+
+            {/* Crónicas */}
+            {porraName && (
+              <div className="flex-1 min-w-0">
+                <h2 className="font-bold mb-3 text-base">Crónicas</h2>
+                {cronicas.length === 0 ? (
+                  <p className="text-gray-500 text-sm">No hay crónicas publicadas aún.</p>
+                ) : (
+                  <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
+                    {cronicas.map(c => (
+                      <div key={c.id} className="border border-gray-700 rounded-lg p-3 bg-gray-800/40">
+                        {c.title && <p className="font-semibold text-purple-400 text-sm mb-1">{c.title}</p>}
+                        <p className="text-gray-300 text-sm whitespace-pre-wrap">{c.content}</p>
+                        <p className="text-gray-500 text-xs mt-2">
+                          {new Date(c.createdAt).toLocaleString("es-ES", {
+                            day: "2-digit", month: "2-digit", year: "numeric",
+                            hour: "2-digit", minute: "2-digit",
+                          })}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
           </div>
-          {error && <div className="mt-3 bg-red-900/50 border border-red-700 text-red-200 p-2 rounded text-sm text-center">{error}</div>}
-          {loading && <p className="text-center text-gray-400 text-sm mt-3">Cargando...</p>}
         </div>
 
         {porraData && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
             {/* ── Clasificación ── */}
-            <div className="bg-gray-900/80 backdrop-blur-md rounded-lg shadow-md p-4 border border-gray-800/50">
-              <p className="text-xs text-gray-400 mb-3">💡 Haz clic en un participante para ver el desglose de puntos.</p>
-              <h2 className="text-lg font-bold mb-3 text-center">{porraData.porra.name}</h2>
-              <div className="overflow-x-auto">
+            <div className="bg-gray-900/80 backdrop-blur-md rounded-lg shadow-md p-4 border border-gray-800/50 flex flex-col h-[680px]">
+              <p className="text-xs text-gray-400 mb-3 shrink-0">💡 Haz clic en un participante para ver el desglose de puntos.</p>
+              <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-800">
                     <tr>
@@ -592,8 +634,8 @@ export default function PorraStatusPage() {
             </div>
 
             {/* ── Predicciones ── */}
-            <div className="bg-gray-900/80 backdrop-blur-md rounded-lg shadow-md p-4 border border-gray-800/50 lg:sticky lg:top-18">
-              <div className="mb-3">
+            <div className="bg-gray-900/80 backdrop-blur-md rounded-lg shadow-md p-4 border border-gray-800/50 lg:sticky lg:top-18 flex flex-col h-[680px]">
+              <div className="mb-3 shrink-0">
                 <label className="block font-semibold mb-2 text-sm">Ver predicciones de:</label>
                 <select
                   className="border border-gray-700 bg-gray-800 text-white p-2 w-full rounded text-sm focus:outline-none focus:border-blue-500"
@@ -601,22 +643,13 @@ export default function PorraStatusPage() {
                   onChange={e => setSelectedParticipantId(Number(e.target.value))}
                 >
                   <option value="">-- Selecciona un participante --</option>
-                  {porraData.allEntries.map(e => <option key={e.id} value={e.id}>{e.participantName}</option>)}
+                  {[...porraData.allEntries].sort((a, b) => a.participantName.localeCompare(b.participantName, "es")).map(e => <option key={e.id} value={e.id}>{e.participantName}</option>)}
                 </select>
               </div>
 
               {selectedEntry && (
-                <>
-                  <div className="mb-3 p-3 bg-gradient-to-r from-blue-900/50 to-purple-900/50 rounded-lg border border-blue-700/50 text-sm">
-                    <p className="text-gray-300">
-                      Puntos totales: <span className="font-bold text-orange-400 text-base ml-1">{selectedEntry.totalPoints}</span>
-                    </p>
-                    <p className="text-gray-300 mt-1">
-                      Pichichi: <span className="font-semibold ml-1">{selectedEntry.pichichi}</span>
-                    </p>
-                  </div>
-
-                  <div className="max-h-[600px] overflow-y-auto">
+                <div className="flex flex-col flex-1 min-h-0">
+                  <div className="flex-1 min-h-0 overflow-y-auto">
                     {Object.entries(groupPredictionsByPhase(selectedEntry.predictions)).map(([phase, preds]) => (
                       <div key={phase} className="mb-4">
                         <h3 className="text-sm font-semibold mb-2 text-blue-400 border-b border-gray-700 pb-1 sticky top-0">
@@ -716,7 +749,7 @@ export default function PorraStatusPage() {
                       </div>
                     ))}
                   </div>
-                </>
+                </div>
               )}
 
               {!selectedEntry && porraData.allEntries.length > 0 && (

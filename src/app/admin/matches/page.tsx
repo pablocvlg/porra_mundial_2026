@@ -16,15 +16,70 @@ interface Match {
   isFinished: boolean;
 }
 
+interface Porra {
+  id: number;
+  name: string;
+}
+
 function AdminMatchesContent() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [editingMatch, setEditingMatch] = useState<Match | null>(null);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
 
+  const [showCronicaModal, setShowCronicaModal] = useState(false);
+  const [porras, setPorras] = useState<Porra[]>([]);
+  const [cronicaForm, setCronicaForm] = useState({ porraId: '', title: '', content: '' });
+  const [cronicaLoading, setCronicaLoading] = useState(false);
+
   useEffect(() => {
     fetchMatches();
+    fetchPorras();
   }, []);
+
+  const fetchPorras = async () => {
+    try {
+      const res = await fetch('/api/porras');
+      const data = await res.json();
+      setPorras(data);
+      if (data.length > 0) {
+        setCronicaForm(f => ({ ...f, porraId: String(data[0].id) }));
+      }
+    } catch {
+      // silencioso
+    }
+  };
+
+  const handlePublishCronica = async () => {
+    if (!cronicaForm.porraId || !cronicaForm.content.trim()) {
+      alert('Debes seleccionar una porra y escribir el contenido');
+      return;
+    }
+    setCronicaLoading(true);
+    try {
+      const res = await fetch('/api/admin/cronicas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          porraId: Number(cronicaForm.porraId),
+          title: cronicaForm.title,
+          content: cronicaForm.content,
+        }),
+      });
+      if (res.ok) {
+        setShowCronicaModal(false);
+        setCronicaForm({ porraId: porras.length > 0 ? String(porras[0].id) : '', title: '', content: '' });
+        alert('✓ Crónica publicada correctamente');
+      } else {
+        const err = await res.json();
+        alert('Error: ' + (err.error || 'Error desconocido'));
+      }
+    } catch {
+      alert('Error al publicar la crónica');
+    } finally {
+      setCronicaLoading(false);
+    }
+  };
 
   const fetchMatches = async () => {
     try {
@@ -103,7 +158,15 @@ function AdminMatchesContent() {
     <div className="w-full min-h-screen bg-black bg-center bg-no-repeat bg-fixed text-white pt-16"
          style={{ backgroundImage: `url('/background.avif')` }}>
       <div className="max-w-7xl mx-auto p-6">
-        <h1 className="text-3xl font-bold mb-6">Administrar Partidos</h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold">Administrar Partidos</h1>
+          <button
+            onClick={() => setShowCronicaModal(true)}
+            className="bg-purple-600 text-white px-5 py-3 rounded-lg hover:bg-purple-700 transition-colors font-semibold"
+          >
+            Publicar crónica
+          </button>
+        </div>
 
         <div className="bg-gray-900/80 backdrop-blur-md border border-gray-800/50 rounded-lg p-6 mb-6">
           <div className="text-sm text-gray-400">
@@ -303,6 +366,70 @@ function AdminMatchesContent() {
           ))}
         </div>
       </div>
+
+      {showCronicaModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-2xl shadow-2xl">
+            <h2 className="text-2xl font-bold mb-6">Publicar crónica</h2>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-300">Porra</label>
+                <select
+                  value={cronicaForm.porraId}
+                  onChange={e => setCronicaForm(f => ({ ...f, porraId: e.target.value }))}
+                  className="border border-gray-700 bg-gray-800 text-white p-3 w-full rounded-lg focus:outline-none focus:border-purple-500 transition-colors"
+                >
+                  {porras.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-300">
+                  Título <span className="text-gray-500 text-xs">(opcional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={cronicaForm.title}
+                  onChange={e => setCronicaForm(f => ({ ...f, title: e.target.value }))}
+                  className="border border-gray-700 bg-gray-800 text-white p-3 w-full rounded-lg focus:outline-none focus:border-purple-500 transition-colors"
+                  placeholder="Ej: Resumen de la fase de grupos"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-300">Contenido</label>
+                <textarea
+                  value={cronicaForm.content}
+                  onChange={e => setCronicaForm(f => ({ ...f, content: e.target.value }))}
+                  rows={8}
+                  className="border border-gray-700 bg-gray-800 text-white p-3 w-full rounded-lg focus:outline-none focus:border-purple-500 transition-colors resize-none"
+                  placeholder="Escribe la crónica aquí..."
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={handlePublishCronica}
+                disabled={cronicaLoading}
+                className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-colors flex-1"
+              >
+                {cronicaLoading ? 'Publicando...' : 'Publicar'}
+              </button>
+              <button
+                onClick={() => setShowCronicaModal(false)}
+                disabled={cronicaLoading}
+                className="bg-gray-700 text-white px-6 py-3 rounded-lg hover:bg-gray-600 font-semibold transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { prisma } from "../../../../lib/prisma";
 export async function GET() {
   try {
     const porras = await prisma.porra.findMany({
-      select: { name: true },
+      select: { id: true, name: true },
       orderBy: { name: "asc" },
     });
     return NextResponse.json(porras);

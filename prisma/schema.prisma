@@ -13,6 +13,16 @@ model Porra {
   isActive  Boolean   @default(true)
   entries   Entry[]
   allowed   AllowedParticipant[]
+  cronicas  Cronica[]
+}
+
+model Cronica {
+  id        Int      @id @default(autoincrement())
+  porra     Porra    @relation(fields: [porraId], references: [id])
+  porraId   Int
+  title     String?
+  content   String
+  createdAt DateTime @default(now())
 }
 
 model AllowedParticipant {
