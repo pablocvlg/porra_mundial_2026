@@ -483,10 +483,9 @@ export default function ResultsPage() {
           </div>
 
           {/* Calendario */}
-          <div className="relative">
-            <div className="absolute inset-0 flex flex-col">
-            <h2 className="text-base font-bold mb-3 shrink-0">Calendario</h2>
-            <div className="bg-gray-900/80 border border-gray-800 rounded-lg p-3 flex-1 min-h-0 overflow-y-auto">
+          <div className="flex flex-col overflow-hidden">
+            <h2 className="text-base font-bold mb-3">Calendario</h2>
+            <div className="bg-gray-900/80 border border-gray-800 rounded-lg p-3 flex-1 overflow-y-auto">
               {groupedMatches.calendarByDay.map(({ day, matches: dayMatches }) => (
                 <div key={day} className="mb-4">
                   <div className="text-xs font-bold text-blue-400 uppercase tracking-wide mb-2 capitalize">{day}</div>
@@ -500,7 +499,7 @@ export default function ResultsPage() {
                       const awayGoals = match.awayGoals != null ? match.awayGoals : null;
                       return (
                         <div key={match.id} className={`flex items-center gap-2 p-1.5 rounded text-xs ${isFinished ? 'bg-blue-900/40 border border-blue-800/50' : 'bg-gray-800/60 border border-gray-700/50'}`}>
-                          <span className="text-gray-400 w-10 shrink-0">{time}</span>
+                          <span className="text-gray-400 w-10 shrink-0 mr-[-20px]">{time}</span>
                           <span className="flex-1 text-right truncate">{match.homeTeam}</span>
                           <span className="shrink-0 font-bold w-12 text-center">
                             {isFinished && homeGoals !== null && awayGoals !== null
@@ -517,7 +516,6 @@ export default function ResultsPage() {
               {groupedMatches.calendarByDay.length === 0 && (
                 <p className="text-gray-500 text-sm text-center py-4">No hay fechas programadas aún.</p>
               )}
-            </div>
             </div>
           </div>
 
