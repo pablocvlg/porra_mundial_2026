@@ -13,6 +13,7 @@ type Match = {
   awayGoals?: number | null;
   isFinished?: boolean;
   penaltyWinner?: string | null;
+  scheduledAt?: string | null;
 };
 
 type TeamStats = {
@@ -335,7 +336,22 @@ export default function ResultsPage() {
       }
     }
 
-    return { groups, knockout, groupStandings };
+    const calendarByDay: { day: string; matches: Match[] }[] = [];
+    const dayMap: Record<string, Match[]> = {};
+
+    [...matches]
+      .filter(m => m.scheduledAt)
+      .sort((a, b) => new Date(a.scheduledAt!).getTime() - new Date(b.scheduledAt!).getTime())
+      .forEach(m => {
+        const day = new Date(m.scheduledAt!).toLocaleDateString('es-ES', {
+          timeZone: 'Europe/Madrid',
+          weekday: 'long', day: 'numeric', month: 'long',
+        });
+        if (!dayMap[day]) { dayMap[day] = []; calendarByDay.push({ day, matches: dayMap[day] }); }
+        dayMap[day].push(m);
+      });
+
+    return { groups, knockout, groupStandings, calendarByDay };
   }, [matches]);
 
   const renderMatch = (match: Match) => {
@@ -394,73 +410,117 @@ export default function ResultsPage() {
     <div className="w-full min-h-screen bg-black bg-center bg-no-repeat bg-fixed text-white pt-10"
       style={{ backgroundImage: `url('/background.avif')` }}>
       <div className="max-w-8xl mx-auto p-4">
-        <h1 className="text-xl font-bold mb-3">RESULTADOS REALES</h1>
-        <h2 className="text-base font-bold mb-3">Fase de Grupos</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 mb-4">
-          {Object.entries(groupedMatches.groups).sort().map(([groupLetter, groupMatches]) => {
-            const standings = groupedMatches.groupStandings[groupLetter] || [];
-            
-            return (
-              <div key={groupLetter} className="bg-gray-900/80 border border-gray-800 rounded-lg p-2">
-                <h3 className="text-sm font-bold mb-2 text-blue-400">Grupo {groupLetter}</h3>
-                <div className="mb-2 overflow-x-auto">
-                  <table className="w-full text-xs">
-                    <thead className="bg-gray-800">
-                      <tr>
-                        <th className="p-1 text-left">Pos</th>
-                        <th className="p-1 text-left">Equipo</th>
-                        <th className="p-1 text-center">PJ</th>
-                        <th className="p-1 text-center">Pts</th>
-                        <th className="p-1 text-center">GF</th>
-                        <th className="p-1 text-center">GC</th>
-                        <th className="p-1 text-center">DG</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {standings.map((stats, idx) => (
-                        <tr key={stats.team} className={`border-b border-gray-800 ${idx < 2 ? 'bg-green-900 bg-opacity-20' : ''}`}>
-                          <td className="p-1 text-center font-semibold">{idx + 1}</td>
-                          <td className="p-1">{stats.team}</td>
-                          <td className="p-1 text-center">{stats.played}</td>
-                          <td className="p-1 text-center font-bold">{stats.points}</td>
-                          <td className="p-1 text-center">{stats.goalsFor}</td>
-                          <td className="p-1 text-center">{stats.goalsAgainst}</td>
-                          <td className="p-1 text-center">{stats.goalDifference > 0 ? '+' : ''}{stats.goalDifference}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <div className="space-y-1">
-                  {groupMatches.map(match => {
-                    const isFinished = match.isFinished ?? false;
-                    const homeGoals = match.homeGoals !== undefined && match.homeGoals !== null ? match.homeGoals : null;
-                    const awayGoals = match.awayGoals !== undefined && match.awayGoals !== null ? match.awayGoals : null;
-                    
-                    return (
-                      <div key={match.id} className={`flex items-center justify-between p-1 rounded ${
-                        isFinished ? 'bg-blue-900' : 'bg-gray-800'
-                      }`}>
-                        <span className="w-2/5 text-right text-xs pr-1">{match.homeTeam}</span>
-                        <div className="flex items-center space-x-1">
-                          {isFinished && homeGoals !== null && awayGoals !== null ? (
-                            <>
-                              <span className="font-bold text-sm w-5 text-center">{homeGoals}</span>
-                              <span className="text-gray-500 text-xs">-</span>
-                              <span className="font-bold text-sm w-5 text-center">{awayGoals}</span>
-                            </>
-                          ) : (
-                            <span className="text-gray-500 text-xs">vs</span>
-                          )}
+        <h1 className="text-xl font-bold mb-6 mt-4">RESULTADOS REALES</h1>
+
+        {/* ── Fila superior: Grupos + Calendario ── */}
+        <div className="grid grid-cols-1 xl:grid-cols-[4fr_1.5fr] gap-4 mb-4 items-stretch">
+
+          {/* Fase de grupos */}
+          <div>
+            <h2 className="text-base font-bold mb-3">Fase de Grupos</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              {Object.entries(groupedMatches.groups).sort().map(([groupLetter, groupMatches]) => {
+                const standings = groupedMatches.groupStandings[groupLetter] || [];
+                return (
+                  <div key={groupLetter} className="bg-gray-900/80 border border-gray-800 rounded-lg p-2">
+                    <h3 className="text-sm font-bold mb-2 text-blue-400">Grupo {groupLetter}</h3>
+                    <div className="mb-2 overflow-x-auto">
+                      <table className="w-full text-xs">
+                        <thead className="bg-gray-800">
+                          <tr>
+                            <th className="p-1 text-left">Pos</th>
+                            <th className="p-1 text-left">Equipo</th>
+                            <th className="p-1 text-center">PJ</th>
+                            <th className="p-1 text-center">Pts</th>
+                            <th className="p-1 text-center">GF</th>
+                            <th className="p-1 text-center">GC</th>
+                            <th className="p-1 text-center">DG</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {standings.map((stats, idx) => (
+                            <tr key={stats.team} className={`border-b border-gray-800 ${idx < 2 ? 'bg-green-900 bg-opacity-20' : ''}`}>
+                              <td className="p-1 text-center font-semibold">{idx + 1}</td>
+                              <td className="p-1">{stats.team}</td>
+                              <td className="p-1 text-center">{stats.played}</td>
+                              <td className="p-1 text-center font-bold">{stats.points}</td>
+                              <td className="p-1 text-center">{stats.goalsFor}</td>
+                              <td className="p-1 text-center">{stats.goalsAgainst}</td>
+                              <td className="p-1 text-center">{stats.goalDifference > 0 ? '+' : ''}{stats.goalDifference}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="space-y-1">
+                      {groupMatches.map(match => {
+                        const isFinished = match.isFinished ?? false;
+                        const homeGoals = match.homeGoals != null ? match.homeGoals : null;
+                        const awayGoals = match.awayGoals != null ? match.awayGoals : null;
+                        return (
+                          <div key={match.id} className={`flex items-center justify-between p-1 rounded ${isFinished ? 'bg-blue-900' : 'bg-gray-800'}`}>
+                            <span className="w-2/5 text-right text-xs pr-1">{match.homeTeam}</span>
+                            <div className="flex items-center space-x-1">
+                              {isFinished && homeGoals !== null && awayGoals !== null ? (
+                                <>
+                                  <span className="font-bold text-sm w-5 text-center">{homeGoals}</span>
+                                  <span className="text-gray-500 text-xs">-</span>
+                                  <span className="font-bold text-sm w-5 text-center">{awayGoals}</span>
+                                </>
+                              ) : (
+                                <span className="text-gray-500 text-xs">vs</span>
+                              )}
+                            </div>
+                            <span className="w-2/5 text-xs pl-1">{match.awayTeam}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Calendario */}
+          <div className="relative">
+            <div className="absolute inset-0 flex flex-col">
+            <h2 className="text-base font-bold mb-3 shrink-0">Calendario</h2>
+            <div className="bg-gray-900/80 border border-gray-800 rounded-lg p-3 flex-1 min-h-0 overflow-y-auto">
+              {groupedMatches.calendarByDay.map(({ day, matches: dayMatches }) => (
+                <div key={day} className="mb-4">
+                  <div className="text-xs font-bold text-blue-400 uppercase tracking-wide mb-2 capitalize">{day}</div>
+                  <div className="space-y-1">
+                    {dayMatches.map(match => {
+                      const time = new Date(match.scheduledAt!).toLocaleTimeString('es-ES', {
+                        timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit',
+                      });
+                      const isFinished = match.isFinished ?? false;
+                      const homeGoals = match.homeGoals != null ? match.homeGoals : null;
+                      const awayGoals = match.awayGoals != null ? match.awayGoals : null;
+                      return (
+                        <div key={match.id} className={`flex items-center gap-2 p-1.5 rounded text-xs ${isFinished ? 'bg-blue-900/40 border border-blue-800/50' : 'bg-gray-800/60 border border-gray-700/50'}`}>
+                          <span className="text-gray-400 w-10 shrink-0">{time}</span>
+                          <span className="flex-1 text-right truncate">{match.homeTeam}</span>
+                          <span className="shrink-0 font-bold w-12 text-center">
+                            {isFinished && homeGoals !== null && awayGoals !== null
+                              ? <span className="text-orange-400">{homeGoals} - {awayGoals}</span>
+                              : <span className="text-gray-500">vs</span>}
+                          </span>
+                          <span className="flex-1 truncate">{match.awayTeam}</span>
                         </div>
-                        <span className="w-2/5 text-xs pl-1">{match.awayTeam}</span>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              ))}
+              {groupedMatches.calendarByDay.length === 0 && (
+                <p className="text-gray-500 text-sm text-center py-4">No hay fechas programadas aún.</p>
+              )}
+            </div>
+            </div>
+          </div>
+
         </div>
 
         {groupedMatches.knockout.length > 0 && (

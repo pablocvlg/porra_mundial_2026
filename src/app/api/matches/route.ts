@@ -5,17 +5,18 @@ import { prisma } from "../../../../lib/prisma";
 
 export async function GET() {
   try {
-    const matches = await prisma.$queryRaw<{ 
-      id: number; 
-      homeTeam: string; 
-      awayTeam: string; 
-      phase: string; 
-      group: string | null; 
-      homeGoals: number | null; 
+    const matches = await prisma.$queryRaw<{
+      id: number;
+      homeTeam: string;
+      awayTeam: string;
+      phase: string;
+      group: string | null;
+      homeGoals: number | null;
       awayGoals: number | null;
       matchOrder: number;
       isFinished: boolean;
       penaltyWinner: string | null;
+      scheduledAt: Date | null;
     }[]>`
       SELECT * FROM "Match"
       ORDER BY "matchOrder" ASC

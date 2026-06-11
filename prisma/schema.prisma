@@ -71,6 +71,7 @@ model Match {
   homeGoals     Int?     // Resultado real que actualizaré manualmente
   awayGoals     Int?
   penaltyWinner String?  // "home" o "away" si hubo penaltis
-  isFinished    Boolean  @default(false) // Para saber si ya hay resultado
+  isFinished    Boolean   @default(false) // Para saber si ya hay resultado
+  scheduledAt   DateTime?
   predictions   Prediction[]
 }

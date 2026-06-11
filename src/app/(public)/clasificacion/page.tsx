@@ -12,6 +12,7 @@ type Match = {
   awayGoals?: number | null;
   penaltyWinner?: string | null;
   isFinished: boolean;
+  scheduledAt?: string | null;
 };
 
 type Prediction = {
@@ -371,7 +372,11 @@ export default function PorraStatusPage() {
 
   const groupPredictionsByPhase = (predictions: Prediction[]) => {
     const grouped: Record<string, Prediction[]> = {};
-    [...predictions].sort((a, b) => a.match.id - b.match.id).forEach(pred => {
+    [...predictions].sort((a, b) => {
+      const ta = a.match.scheduledAt ? new Date(a.match.scheduledAt).getTime() : a.match.id * 1e12;
+      const tb = b.match.scheduledAt ? new Date(b.match.scheduledAt).getTime() : b.match.id * 1e12;
+      return ta - tb;
+    }).forEach(pred => {
       const phase = pred.match.phase;
       if (!grouped[phase]) grouped[phase] = [];
       grouped[phase].push(pred);
