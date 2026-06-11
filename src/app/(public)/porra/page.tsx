@@ -611,17 +611,20 @@ export default function PorraPage() {
     );
   };
 
-  return (
-    <div className="w-full min-h-screen bg-black bg-center bg-no-repeat bg-fixed text-white flex items-center justify-center p-4"
-      style={{ backgroundImage: `url('/background.avif')` }}>
-      <div className="bg-black border-2 border-red-700 rounded-xl p-8 max-w-md w-full text-center shadow-2xl shadow-red-900/40">
-        <p className="text-red-500 text-2xl font-bold mb-3">Plazo cerrado</p>
-        <p className="text-gray-300 text-sm">Ya no se admiten nuevas porras.<br />Puedes ver la clasificación en el menú.</p>
-      </div>
-    </div>
-  );
+  const porraCerrada = true;
 
-  // eslint-disable-next-line no-unreachable
+  if (porraCerrada) {
+    return (
+      <div className="w-full min-h-screen bg-black bg-center bg-no-repeat bg-fixed text-white flex items-center justify-center p-4"
+        style={{ backgroundImage: `url('/background.avif')` }}>
+        <div className="bg-black border-2 border-red-700 rounded-xl p-8 max-w-md w-full text-center shadow-2xl shadow-red-900/40">
+          <p className="text-red-500 text-2xl font-bold mb-3">Plazo cerrado</p>
+          <p className="text-gray-300 text-sm">Ya no se admiten nuevas porras.<br />Puedes ver la clasificación en el menú.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="w-full min-h-screen bg-black bg-center bg-no-repeat bg-fixed text-white pt-10"
