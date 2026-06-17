@@ -483,7 +483,8 @@ export default function ResultsPage() {
           </div>
 
           {/* Calendario */}
-          <div className="flex flex-col overflow-hidden">
+          <div className="relative min-h-[60vh] xl:min-h-0">
+            <div className="absolute inset-0 flex flex-col">
             <h2 className="text-base font-bold mb-3">Calendario</h2>
             <div className="bg-gray-900/80 border border-gray-800 rounded-lg p-3 flex-1 overflow-y-auto">
               {groupedMatches.calendarByDay.map(({ day, matches: dayMatches }) => (
@@ -516,6 +517,7 @@ export default function ResultsPage() {
               {groupedMatches.calendarByDay.length === 0 && (
                 <p className="text-gray-500 text-sm text-center py-4">No hay fechas programadas aún.</p>
               )}
+            </div>
             </div>
           </div>
 
