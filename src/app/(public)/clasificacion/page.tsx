@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import GraficaProgreso, { type ProgressData } from "../../components/GraficaProgreso";
 
 type Match = {
   id: number;
@@ -327,6 +328,7 @@ export default function PorraStatusPage() {
   const [selectedParticipantId, setSelectedParticipantId] = useState<number | null>(null);
   const [expandedRowId, setExpandedRowId] = useState<number | null>(null);
   const [cronicas, setCronicas] = useState<Cronica[]>([]);
+  const [progressData, setProgressData] = useState<ProgressData | null>(null);
 
   useEffect(() => {
     fetch("/api/porras")
@@ -336,15 +338,19 @@ export default function PorraStatusPage() {
 
   const handleSearch = async (name: string) => {
     if (!name) { setPorraData(null); return; }
-    setLoading(true); setError(""); setPorraData(null); setCronicas([]);
+    setLoading(true); setError(""); setPorraData(null); setCronicas([]); setProgressData(null);
     setSelectedParticipantId(null); setExpandedRowId(null);
     try {
-      const res = await fetch(`/api/porra-status?${new URLSearchParams({ porraName: name })}`);
+      const [res, progressRes] = await Promise.all([
+        fetch(`/api/porra-status?${new URLSearchParams({ porraName: name })}`),
+        fetch(`/api/porra-progress?${new URLSearchParams({ porraName: name })}`),
+      ]);
       const data = await res.json();
       if (res.ok) {
         setPorraData(data);
         const cronicasRes = await fetch(`/api/admin/cronicas?porraId=${data.porra.id}`);
         if (cronicasRes.ok) setCronicas(await cronicasRes.json());
+        if (progressRes.ok) setProgressData(await progressRes.json());
       } else {
         setError(data.error || "Error al cargar la porra");
       }
@@ -438,6 +444,13 @@ export default function PorraStatusPage() {
 
           </div>
         </div>
+
+        {/* ── Gráfica de evolución ── */}
+        {progressData && progressData.entries.length > 0 && (
+          <div className="mb-4">
+            <GraficaProgreso data={progressData} />
+          </div>
+        )}
 
         {porraData && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -639,6 +652,7 @@ export default function PorraStatusPage() {
             </div>
 
             {/* ── Predicciones ── */}
+
             <div className="bg-gray-900/80 backdrop-blur-md rounded-lg shadow-md p-4 border border-gray-800/50 lg:sticky lg:top-18 flex flex-col h-[680px]">
               <div className="mb-3 shrink-0">
                 <label className="block font-semibold mb-2 text-sm">Ver predicciones de:</label>
