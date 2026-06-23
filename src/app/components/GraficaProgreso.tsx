@@ -87,7 +87,7 @@ export default function GraficaProgreso({ data }: Props) {
   ];
 
   const chartData = buildChartData(data.xLabels, visibleEntries.map(v => v.entry));
-  const qualLabel = data.xLabels[data.qualificationIndex];
+  const qualLabel = data.xLabels[data.qualificationIndex - 1];
 
   const groupMatchCount = data.qualificationIndex;
   const knockoutMatchCount = data.xLabels.length - data.qualificationIndex - 1;
