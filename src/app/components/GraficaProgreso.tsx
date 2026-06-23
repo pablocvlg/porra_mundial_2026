@@ -9,7 +9,7 @@ export type ProgressEntry = {
   entryId: number;
   participantName: string;
   totalPoints: number;
-  cumulativePoints: number[];
+  cumulativePoints: (number | null)[];
 };
 
 export type ProgressData = {
@@ -35,8 +35,8 @@ const LAST_COLOR = "#9CA3AF";
 
 function buildChartData(xLabels: string[], entries: ProgressEntry[]) {
   return xLabels.map((label, i) => {
-    const point: Record<string, string | number> = { x: label };
-    entries.forEach(e => { point[e.participantName] = e.cumulativePoints[i] ?? 0; });
+    const point: Record<string, string | number | null> = { x: label };
+    entries.forEach(e => { point[e.participantName] = e.cumulativePoints[i] ?? null; });
     return point;
   });
 }

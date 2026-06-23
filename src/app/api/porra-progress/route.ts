@@ -139,7 +139,7 @@ export async function GET(request: NextRequest) {
   const entries = allEntries.map(entry => {
     const predMap = new Map(entry.predictions.map(p => [p.matchId, p]));
     const groupPreds = entry.predictions.filter(p => p.match.phase === "Group") as PredWithMatch[];
-    const cumulativePoints: number[] = [];
+    const cumulativePoints: (number | null)[] = [];
     let running = 0;
 
     for (const match of groupMatches) {
@@ -147,21 +147,29 @@ export async function GET(request: NextRequest) {
       if (pred && match.isFinished) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         running += calculateMatchPoints(pred as any, match as any);
+        cumulativePoints.push(running);
+      } else {
+        cumulativePoints.push(null);
       }
-      cumulativePoints.push(running);
     }
 
-    // Punto de clasificación: todos los puntos de pase de ronda caen aquí
-    running += calcQualificationPoints(groupPreds, allGroupsFinished);
-    cumulativePoints.push(running);
+    // Punto de clasificación: cae cuando todos los grupos han terminado
+    if (allGroupsFinished) {
+      running += calcQualificationPoints(groupPreds, true);
+      cumulativePoints.push(running);
+    } else {
+      cumulativePoints.push(null);
+    }
 
     for (const match of knockoutMatches) {
       const pred = predMap.get(match.id);
       if (pred && match.isFinished) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         running += calculateMatchPoints(pred as any, match as any);
+        cumulativePoints.push(running);
+      } else {
+        cumulativePoints.push(null);
       }
-      cumulativePoints.push(running);
     }
 
     return {
