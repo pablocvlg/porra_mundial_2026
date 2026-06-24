@@ -375,6 +375,9 @@ export async function calculateGroupQualificationPoints(entryId: number): Promis
 
   const groupPreds = predictions.filter(p => p.match.phase === 'Group');
 
+  // Solo calcular cuando TODOS los grupos han terminado
+  if (!groupPreds.every(p => p.match.isFinished)) return 0;
+
   const groupsByLetter: Record<string, typeof groupPreds> = {};
   groupPreds.forEach(pred => {
     const letter = pred.match.group;
@@ -385,8 +388,6 @@ export async function calculateGroupQualificationPoints(entryId: number): Promis
   });
 
   for (const groupPreds of Object.values(groupsByLetter)) {
-    // Solo calcular si el grupo está finalizado completamente
-    if (!groupPreds.every(p => p.match.isFinished)) continue;
 
     const groupMatches = groupPreds.map(p => ({ prediction: p, match: p.match }));
     const predicted = calculateGroupStandings(groupMatches, true);
