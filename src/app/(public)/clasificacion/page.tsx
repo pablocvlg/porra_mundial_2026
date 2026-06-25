@@ -151,34 +151,37 @@ function calculateStats(entry: Entry) {
     }
   });
 
-  let finishedGroups = 0;
   const totalGroups = Object.keys(groupsByLetter).length;
+  const finishedGroups = Object.values(groupsByLetter).filter(gPreds => gPreds.every(p => p.match.isFinished)).length;
+
+  // Solo calcular cuando TODOS los grupos han terminado
+  const allGroupsDone = finishedGroups === totalGroups && totalGroups > 0;
+
   let qualifiedWithPos = 0;
   let qualifiedNoPos = 0;
   let qualificationPoints = 0;
   let maxQualificationPoints = 0;
 
-  for (const gPreds of Object.values(groupsByLetter)) {
-    if (!gPreds.every(p => p.match.isFinished)) continue;
-    finishedGroups++;
-    maxQualificationPoints += 14; // 2 posiciones × (4+3)
+  if (allGroupsDone) {
+    for (const gPreds of Object.values(groupsByLetter)) {
+      maxQualificationPoints += 14; // 2 posiciones × (4+3)
 
-    const predicted = calculateGroupStandings(gPreds, true);
-    const real = calculateGroupStandings(gPreds, false);
-    const realTop2 = real.slice(0, 2).map(s => s.team);
+      const predicted = calculateGroupStandings(gPreds, true);
+      const real = calculateGroupStandings(gPreds, false);
+      const realTop2 = real.slice(0, 2).map(s => s.team);
 
-    for (let pos = 0; pos < 2; pos++) {
-      const predTeam = predicted[pos]?.team;
-      if (!predTeam) continue;
-      if (realTop2.includes(predTeam)) {
-        if (predTeam === real[pos]?.team) { qualifiedWithPos++; qualificationPoints += 7; }
-        else { qualifiedNoPos++; qualificationPoints += 4; }
+      for (let pos = 0; pos < 2; pos++) {
+        const predTeam = predicted[pos]?.team;
+        if (!predTeam) continue;
+        if (realTop2.includes(predTeam)) {
+          if (predTeam === real[pos]?.team) { qualifiedWithPos++; qualificationPoints += 7; }
+          else { qualifiedNoPos++; qualificationPoints += 4; }
+        }
       }
     }
   }
 
   // ── Mejores terceros ───────────────────────────────────────────────────────
-  const allGroupsDone = finishedGroups === totalGroups && totalGroups > 0;
   let bestThirdWithPos = 0;
   let bestThirdNoPos = 0;
   let bestThirdPoints = 0;
@@ -522,11 +525,24 @@ export default function PorraStatusPage() {
 
                                   {/* CLASIFICACIÓN */}
                                   {stats.finishedGroups > 0 && (() => {
-                                    const totalCorrect = stats.qualifiedWithPos + stats.qualifiedNoPos + (stats.allGroupsDone ? stats.bestThirdWithPos + stats.bestThirdNoPos : 0);
-                                    const totalWithExactPos = stats.qualifiedWithPos + (stats.allGroupsDone ? stats.bestThirdWithPos : 0);
+                                    if (!stats.allGroupsDone) {
+                                      return (
+                                        <DesgloseSeccion
+                                          title={`Clasificación · ${stats.finishedGroups}/${stats.totalGroups} grupos`}
+                                          subtotal={0}
+                                          maxSub={0}
+                                        >
+                                          <div className="px-2 py-1 text-xs text-gray-500 italic">
+                                            Los puntos de clasificación se calcularán cuando terminen todos los grupos
+                                          </div>
+                                        </DesgloseSeccion>
+                                      );
+                                    }
+                                    const totalCorrect = stats.qualifiedWithPos + stats.qualifiedNoPos + stats.bestThirdWithPos + stats.bestThirdNoPos;
+                                    const totalWithExactPos = stats.qualifiedWithPos + stats.bestThirdWithPos;
                                     return (
                                       <DesgloseSeccion
-                                        title={stats.allGroupsDone ? "Clasificación · 32 clasificados" : `Clasificación · ${stats.finishedGroups}/${stats.totalGroups} grupos`}
+                                        title="Clasificación · 32 clasificados"
                                         subtotal={stats.qualificationPoints + stats.bestThirdPoints}
                                         maxSub={stats.maxQualificationPoints + stats.maxBestThirdPoints}
                                       >
@@ -542,11 +558,6 @@ export default function PorraStatusPage() {
                                           pts={totalWithExactPos * 3}
                                           color="text-purple-300"
                                         />
-                                        {!stats.allGroupsDone && (
-                                          <div className="px-2 py-1 text-xs text-gray-500 italic">
-                                            Mejores terceros: pendiente de que terminen todos los grupos
-                                          </div>
-                                        )}
                                       </DesgloseSeccion>
                                     );
                                   })()}
