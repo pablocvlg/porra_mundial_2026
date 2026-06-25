@@ -363,9 +363,9 @@ export function calculateMatchPoints(prediction: Prediction, match: Match): numb
   return calculateKnockoutMatchPoints(prediction, match);
 }
 
-// --- Puntos de clasificación de grupos (1º y 2º por grupo) ---
+// --- Puntos de clasificación: 1º/2º por grupo + mejores terceros (con cruce de categorías) ---
 
-export async function calculateGroupQualificationPoints(entryId: number): Promise<number> {
+async function calculateAllQualificationPoints(entryId: number): Promise<number> {
   let points = 0;
 
   const predictions = await prisma.prediction.findMany({
@@ -374,8 +374,6 @@ export async function calculateGroupQualificationPoints(entryId: number): Promis
   });
 
   const groupPreds = predictions.filter(p => p.match.phase === 'Group');
-
-  // Solo calcular cuando TODOS los grupos han terminado
   if (!groupPreds.every(p => p.match.isFinished)) return 0;
 
   const groupsByLetter: Record<string, typeof groupPreds> = {};
@@ -387,11 +385,36 @@ export async function calculateGroupQualificationPoints(entryId: number): Promis
     }
   });
 
-  for (const groupPreds of Object.values(groupsByLetter)) {
+  type ThirdEntry = { team: string; group: string; stats: TeamStats };
+  const predictedThirds: ThirdEntry[] = [];
+  const realThirds: ThirdEntry[] = [];
+  const realAllTop2Set = new Set<string>();
 
-    const groupMatches = groupPreds.map(p => ({ prediction: p, match: p.match }));
+  // Pre-calcular clasificaciones de todos los grupos una sola vez
+  const standingsByGroup: Record<string, { predicted: TeamStats[]; real: TeamStats[] }> = {};
+  for (const [letter, preds] of Object.entries(groupsByLetter)) {
+    const groupMatches = preds.map(p => ({ prediction: p, match: p.match }));
     const predicted = calculateGroupStandings(groupMatches, true);
     const real = calculateGroupStandings(groupMatches, false);
+    standingsByGroup[letter] = { predicted, real };
+    if (real[0]) realAllTop2Set.add(real[0].team);
+    if (real[1]) realAllTop2Set.add(real[1].team);
+    if (predicted[2]) predictedThirds.push({ team: predicted[2].team, group: letter, stats: predicted[2] });
+    if (real[2]) realThirds.push({ team: real[2].team, group: letter, stats: real[2] });
+  }
+
+  const sortThirds = (thirds: ThirdEntry[]) =>
+    [...thirds].sort((a, b) => {
+      if (b.stats.points !== a.stats.points) return b.stats.points - a.stats.points;
+      if (b.stats.goalDifference !== a.stats.goalDifference) return b.stats.goalDifference - a.stats.goalDifference;
+      return b.stats.goalsFor - a.stats.goalsFor;
+    }).slice(0, 8);
+
+  const top8Real = sortThirds(realThirds);
+  const realBestThirdsSet = new Set(top8Real.map(t => t.team));
+
+  // Puntuar 1º y 2º por grupo
+  for (const { predicted, real } of Object.values(standingsByGroup)) {
     const realTop2 = real.slice(0, 2).map(s => s.team);
 
     for (let pos = 0; pos < 2; pos++) {
@@ -403,68 +426,27 @@ export async function calculateGroupQualificationPoints(entryId: number): Promis
         if (predictedTeam === real[pos]?.team) {
           points += POINTS.QUALIFICATION.CORRECT_POSITION;
         }
+      } else if (realBestThirdsSet.has(predictedTeam)) {
+        // Predije top-2 pero el equipo clasificó como mejor tercero
+        points += POINTS.QUALIFICATION.TEAM_QUALIFIES;
       }
     }
   }
 
-  return points;
-}
-
-// --- Puntos por mejores terceros (solo cuando TODOS los grupos han terminado) ---
-
-export async function calculateBestThirdsPoints(entryId: number): Promise<number> {
-  let points = 0;
-
-  const predictions = await prisma.prediction.findMany({
-    where: { entryId },
-    include: { match: true },
-  });
-
-  const groupPreds = predictions.filter(p => p.match.phase === 'Group');
-
-  if (!groupPreds.every(p => p.match.isFinished)) return 0;
-
-  const groupsByLetter: Record<string, typeof groupPreds> = {};
-  groupPreds.forEach(pred => {
-    const letter = pred.match.group;
-    if (letter) {
-      if (!groupsByLetter[letter]) groupsByLetter[letter] = [];
-      groupsByLetter[letter].push(pred);
-    }
-  });
-
-  const predictedThirds: Array<{ team: string; group: string; stats: TeamStats }> = [];
-  const realThirds: Array<{ team: string; group: string; stats: TeamStats }> = [];
-
-  for (const [letter, preds] of Object.entries(groupsByLetter)) {
-    const groupMatches = preds.map(p => ({ prediction: p, match: p.match }));
-    const predicted = calculateGroupStandings(groupMatches, true);
-    const real = calculateGroupStandings(groupMatches, false);
-
-    if (predicted[2]) predictedThirds.push({ team: predicted[2].team, group: letter, stats: predicted[2] });
-    if (real[2]) realThirds.push({ team: real[2].team, group: letter, stats: real[2] });
-  }
-
-  const sortThirds = (thirds: typeof realThirds) =>
-    [...thirds].sort((a, b) => {
-      if (b.stats.points !== a.stats.points) return b.stats.points - a.stats.points;
-      if (b.stats.goalDifference !== a.stats.goalDifference) return b.stats.goalDifference - a.stats.goalDifference;
-      return b.stats.goalsFor - a.stats.goalsFor;
-    }).slice(0, 8);
-
+  // Puntuar mejores terceros
   const top8Predicted = sortThirds(predictedThirds);
-  const top8Real = sortThirds(realThirds);
   const realBestThirdsTeams = top8Real.map(t => t.team);
 
   for (const predictedThird of top8Predicted) {
     if (realBestThirdsTeams.includes(predictedThird.team)) {
       points += POINTS.QUALIFICATION.TEAM_QUALIFIES;
-
-      // Posición exacta: acertó que ese equipo quedaría 3º en su grupo
       const realThird = realThirds.find(t => t.group === predictedThird.group);
       if (realThird && realThird.team === predictedThird.team) {
         points += POINTS.QUALIFICATION.CORRECT_POSITION;
       }
+    } else if (realAllTop2Set.has(predictedThird.team)) {
+      // Predije mejor tercero pero el equipo clasificó como 1º o 2º de grupo
+      points += POINTS.QUALIFICATION.TEAM_QUALIFIES;
     }
   }
 
@@ -485,8 +467,7 @@ export async function updateEntryPoints(entryId: number): Promise<number> {
     total += calculateMatchPoints(pred, pred.match);
   }
 
-  total += await calculateGroupQualificationPoints(entryId);
-  total += await calculateBestThirdsPoints(entryId);
+  total += await calculateAllQualificationPoints(entryId);
 
   if (ACTUAL_PICHICHI) {
     const entry = await prisma.entry.findUnique({ where: { id: entryId } });

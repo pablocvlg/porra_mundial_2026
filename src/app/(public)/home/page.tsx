@@ -221,6 +221,7 @@ export default function ResultsPage() {
 
     const bestThirds = sortedThirdPlace.slice(0, 8);
     const orderedThirds = orderBestThirdsByJSON(bestThirds);
+    const bestThirdsTeamSet = new Set(bestThirds.map(t => t.team));
 
     const resolveTeamName = (placeholder: string, matchId: number): string => {
       const singleGroupPattern = /^([1-2])º Grupo ([A-L])$/i;
@@ -351,7 +352,7 @@ export default function ResultsPage() {
         dayMap[day].push(m);
       });
 
-    return { groups, knockout, groupStandings, calendarByDay };
+    return { groups, knockout, groupStandings, calendarByDay, bestThirdsTeamSet };
   }, [matches]);
 
   const renderMatch = (match: Match) => {
@@ -439,7 +440,7 @@ export default function ResultsPage() {
                         </thead>
                         <tbody>
                           {standings.map((stats, idx) => (
-                            <tr key={stats.team} className={`border-b border-gray-800 ${idx < 2 ? 'bg-green-900 bg-opacity-20' : ''}`}>
+                            <tr key={stats.team} className={`border-b border-gray-800 ${idx < 2 ? 'bg-green-900 bg-opacity-20' : idx === 2 && groupedMatches.bestThirdsTeamSet.has(stats.team) ? 'bg-orange-900 bg-opacity-20' : ''}`}>
                               <td className="p-1 text-center font-semibold">{idx + 1}</td>
                               <td className="p-1">{stats.team}</td>
                               <td className="p-1 text-center">{stats.played}</td>

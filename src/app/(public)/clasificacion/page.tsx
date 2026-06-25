@@ -102,8 +102,51 @@ function calculateGroupStandings(
   });
 
   Object.values(stats).forEach(s => { s.gd = s.gf - s.ga; });
-  return Object.values(stats).sort((a, b) => {
+  const teams = Object.values(stats);
+  return teams.sort((a, b) => {
     if (b.points !== a.points) return b.points - a.points;
+
+    const tiedTeams = teams.filter(t => t.points === a.points);
+
+    if (tiedTeams.length === 2 && tiedTeams.includes(a) && tiedTeams.includes(b)) {
+      const directMatch = groupPredictions.find(pred =>
+        (pred.match.homeTeam === a.team && pred.match.awayTeam === b.team) ||
+        (pred.match.homeTeam === b.team && pred.match.awayTeam === a.team)
+      );
+      if (directMatch) {
+        const hg = usePrediction ? directMatch.homeGoals : (directMatch.match.homeGoals ?? 0);
+        const ag = usePrediction ? directMatch.awayGoals : (directMatch.match.awayGoals ?? 0);
+        if (directMatch.match.homeTeam === a.team) {
+          if (hg > ag) return -1;
+          if (hg < ag) return 1;
+        } else {
+          if (ag > hg) return -1;
+          if (ag < hg) return 1;
+        }
+      }
+    } else if (tiedTeams.length >= 3 && tiedTeams.includes(a) && tiedTeams.includes(b)) {
+      const tiedNames = tiedTeams.map(t => t.team);
+      const mini: Record<string, { points: number; gd: number; gf: number }> = {};
+      tiedNames.forEach(t => { mini[t] = { points: 0, gd: 0, gf: 0 }; });
+      groupPredictions.forEach(pred => {
+        if (!tiedNames.includes(pred.match.homeTeam) || !tiedNames.includes(pred.match.awayTeam)) return;
+        const hg = usePrediction ? pred.homeGoals : (pred.match.homeGoals ?? 0);
+        const ag = usePrediction ? pred.awayGoals : (pred.match.awayGoals ?? 0);
+        mini[pred.match.homeTeam].gf += hg;
+        mini[pred.match.homeTeam].gd += hg - ag;
+        mini[pred.match.awayTeam].gf += ag;
+        mini[pred.match.awayTeam].gd += ag - hg;
+        if (hg > ag) mini[pred.match.homeTeam].points += 3;
+        else if (hg < ag) mini[pred.match.awayTeam].points += 3;
+        else { mini[pred.match.homeTeam].points += 1; mini[pred.match.awayTeam].points += 1; }
+      });
+      const am = mini[a.team];
+      const bm = mini[b.team];
+      if (bm.points !== am.points) return bm.points - am.points;
+      if (bm.gd !== am.gd) return bm.gd - am.gd;
+      if (bm.gf !== am.gf) return bm.gf - am.gf;
+    }
+
     if (b.gd !== a.gd) return b.gd - a.gd;
     return b.gf - a.gf;
   });
@@ -142,7 +185,7 @@ function calculateStats(entry: Entry) {
     }
   }
 
-  // ── Clasificación: 1º y 2º por grupo ──────────────────────────────────────
+  // ── Clasificación: 1º y 2º por grupo + mejores terceros ──────────────────
   const groupsByLetter: Record<string, Prediction[]> = {};
   groupPreds.forEach(p => {
     if (p.match.group) {
@@ -153,33 +196,12 @@ function calculateStats(entry: Entry) {
 
   const totalGroups = Object.keys(groupsByLetter).length;
   const finishedGroups = Object.values(groupsByLetter).filter(gPreds => gPreds.every(p => p.match.isFinished)).length;
-
-  // Solo calcular cuando TODOS los grupos han terminado
   const allGroupsDone = finishedGroups === totalGroups && totalGroups > 0;
 
   let qualifiedWithPos = 0;
   let qualifiedNoPos = 0;
   let qualificationPoints = 0;
   let maxQualificationPoints = 0;
-
-  if (allGroupsDone) {
-    for (const gPreds of Object.values(groupsByLetter)) {
-      maxQualificationPoints += 14; // 2 posiciones × (4+3)
-
-      const predicted = calculateGroupStandings(gPreds, true);
-      const real = calculateGroupStandings(gPreds, false);
-      const realTop2 = real.slice(0, 2).map(s => s.team);
-
-      for (let pos = 0; pos < 2; pos++) {
-        const predTeam = predicted[pos]?.team;
-        if (!predTeam) continue;
-        if (realTop2.includes(predTeam)) {
-          if (predTeam === real[pos]?.team) { qualifiedWithPos++; qualificationPoints += 7; }
-          else { qualifiedNoPos++; qualificationPoints += 4; }
-        }
-      }
-    }
-  }
 
   // ── Mejores terceros ───────────────────────────────────────────────────────
   let bestThirdWithPos = 0;
@@ -191,26 +213,63 @@ function calculateStats(entry: Entry) {
     type ThirdEntry = { team: string; group: string; points: number; gd: number; gf: number };
     const predictedThirds: ThirdEntry[] = [];
     const realThirds: ThirdEntry[] = [];
+    const realAllTop2Set = new Set<string>();
+
+    // Pre-calcular clasificaciones de todos los grupos una sola vez
+    const standingsByGroup: Record<string, {
+      predicted: Array<{ team: string; points: number; gd: number; gf: number }>;
+      real: Array<{ team: string; points: number; gd: number; gf: number }>;
+    }> = {};
 
     for (const [letter, gPreds] of Object.entries(groupsByLetter)) {
-      const pred3 = calculateGroupStandings(gPreds, true)[2];
-      const real3 = calculateGroupStandings(gPreds, false)[2];
-      if (pred3) predictedThirds.push({ team: pred3.team, group: letter, points: pred3.points, gd: pred3.gd, gf: pred3.gf });
-      if (real3) realThirds.push({ team: real3.team, group: letter, points: real3.points, gd: real3.gd, gf: real3.gf });
+      const predicted = calculateGroupStandings(gPreds, true);
+      const real = calculateGroupStandings(gPreds, false);
+      standingsByGroup[letter] = { predicted, real };
+      if (real[0]) realAllTop2Set.add(real[0].team);
+      if (real[1]) realAllTop2Set.add(real[1].team);
+      if (predicted[2]) predictedThirds.push({ team: predicted[2].team, group: letter, points: predicted[2].points, gd: predicted[2].gd, gf: predicted[2].gf });
+      if (real[2]) realThirds.push({ team: real[2].team, group: letter, points: real[2].points, gd: real[2].gd, gf: real[2].gf });
     }
 
     const sortThirds = (t: ThirdEntry[]) =>
       [...t].sort((a, b) => b.points - a.points || b.gd - a.gd || b.gf - a.gf).slice(0, 8);
 
-    const top8Pred = sortThirds(predictedThirds);
     const top8Real = sortThirds(realThirds);
+    const realBestThirdsSet = new Set(top8Real.map(t => t.team));
+
+    // ── Grupos: 1º y 2º ────────────────────────────────────────────────────
+    for (const { predicted, real } of Object.values(standingsByGroup)) {
+      maxQualificationPoints += 14; // 2 posiciones × (4+3)
+      const realTop2 = real.slice(0, 2).map(s => s.team);
+
+      for (let pos = 0; pos < 2; pos++) {
+        const predTeam = predicted[pos]?.team;
+        if (!predTeam) continue;
+        if (realTop2.includes(predTeam)) {
+          if (predTeam === real[pos]?.team) { qualifiedWithPos++; qualificationPoints += 7; }
+          else { qualifiedNoPos++; qualificationPoints += 4; }
+        } else if (realBestThirdsSet.has(predTeam)) {
+          // Predije top-2 pero el equipo clasificó como mejor tercero
+          qualifiedNoPos++;
+          qualificationPoints += 4;
+        }
+      }
+    }
+
+    // ── Mejores terceros ───────────────────────────────────────────────────
+    const top8Pred = sortThirds(predictedThirds);
     const realTeams = top8Real.map(t => t.team);
 
     for (const pt of top8Pred) {
-      if (!realTeams.includes(pt.team)) continue;
-      const rt = realThirds.find(t => t.group === pt.group);
-      if (rt && rt.team === pt.team) { bestThirdWithPos++; bestThirdPoints += 7; }
-      else { bestThirdNoPos++; bestThirdPoints += 4; }
+      if (realBestThirdsSet.has(pt.team)) {
+        const rt = realThirds.find(t => t.group === pt.group);
+        if (rt && rt.team === pt.team) { bestThirdWithPos++; bestThirdPoints += 7; }
+        else { bestThirdNoPos++; bestThirdPoints += 4; }
+      } else if (realAllTop2Set.has(pt.team)) {
+        // Predije mejor tercero pero el equipo clasificó como 1º o 2º de grupo
+        qualifiedNoPos++;
+        qualificationPoints += 4;
+      }
     }
   }
 
